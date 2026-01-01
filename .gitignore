@@ -1,11 +1,33 @@
-__pycache__
-music
-app.log
+# Python
+__pycache__/
 *.pyc
-dist
+*.pyo
+*.pyd
+.venv/
+
+# Build artifacts
+dist/
+build/
+*.spec.bak
+
+# Application data
+music/
+app.log
 *.tmp
-.venv
+config.json
 data/exportify/*
 !data/exportify/exportify_test_playlist.csv
-config.json
 data/spotify_tokens.json
+export/
+
+# IDE
+.claude/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal documentation (not for public release)
+docs/internal/

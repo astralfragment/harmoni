@@ -2,7 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-Here’s what you asked for, following your style and structure:
+---
+
+### 0.5.0 - 2025-DEC-31
+
+### Added
+
+- **Desktop GUI Application** 
+    - A new graphical user interface for HARMONI
+    - Modern dark theme with professional styling
+    - Welcome screen with step-by-step Exportify instructions
+    - Drag-and-drop CSV import for Exportify files
+    - Sidebar navigation for Spotify, YouTube, Downloads, and Settings
+    - Download queue management with progress tracking
+    - Settings panel for audio format, output folder, and preferences
+
+### Changed
+
+- Improved UI spacing, font sizes, and button sizing for better readability
+
 
 ---
 
@@ -20,7 +38,7 @@ Here’s what you asked for, following your style and structure:
 ### Added
 
 - Ability to download playlists directly from Exportify CSV files placed in data/exportify/.
-    - CSVs are auto-scanned, playlists confirmed with the user, and batch downloaded.
+- CSVs are auto-scanned, playlists confirmed with the user, and batch downloaded.
 
 ### Changed
 - removed shutil and added python version (from merge request, thank you Artisan Memory)
@@ -61,7 +79,7 @@ Here’s what you asked for, following your style and structure:
 
 ### 0.1.0 - 2025-AUG-09
 
-### Added
+### Added 
 - Support for importing playlists from Spotify’s playlist files.
 - Option to download entire playlists in bulk or pick individual playlists.
 - New interactive menu system replacing numbered menus.

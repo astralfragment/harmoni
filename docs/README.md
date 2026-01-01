@@ -1,59 +1,60 @@
 # HARMONI Documentation
 
-Welcome to HARMONI documentation! This folder contains detailed documentation for each module and folder in codebase.
+Welcome to the HARMONI documentation. HARMONI is a music downloader supporting Spotify playlists and YouTube.
+
+## Quick Start
+
+| Method | Best For | Guide |
+|--------|----------|-------|
+| **Standalone EXE** | Beginners | [Download & Run](guides/standalone.md) |
+| **Desktop GUI** | Most users | [GUI Guide](guides/gui.md) |
+| **Command Line** | Power users | [CLI Guide](guides/cli.md) |
+| **Docker** | Containers | [Docker Guide](guides/docker.md) |
+
+## Documentation
+
+### [User Guides](guides/)
+
+Everything you need to use HARMONI:
+
+- [Installation](guides/installation.md) - Setup instructions
+- [GUI Guide](guides/gui.md) - Desktop application
+- [CLI Guide](guides/cli.md) - Command-line interface
+- [Standalone](guides/standalone.md) - Executable usage
+- [Spotify Setup](guides/spotify-setup.md) - Connect Spotify
+- [Configuration](guides/configuration.md) - Settings reference
+- [Data Formats](guides/data-formats.md) - File specifications
+- [Docker](guides/docker.md) - Container deployment
+
+### [Developer Docs](dev/)
+
+Technical documentation for contributors:
+
+- [Root Files](dev/root-files.md) - Entry points and config
+- [Downloader](dev/downloader.md) - Download functionality
+- [Menus](dev/menus.md) - CLI menu system
+- [Managers](dev/managers.md) - File management
+- [Utils](dev/utils.md) - Utilities
+- [Tools](dev/tools.md) - Library tools
+- [Data & Export](dev/data-export.md) - Data storage
+
+### [Roadmap](roadmap.md)
+
+Future features and improvements planned for HARMONI.
 
 ## System Requirements
 
-### Required Dependencies
-- **Python 3.9+** - Primary runtime environment
-- **yt-dlp** - YouTube video/audio extraction tool (installed via pip)
-- **ffmpeg** - Audio processing and format conversion (system package)
-  - Ubuntu/Debian: `sudo apt install ffmpeg`
-  - macOS: `brew install ffmpeg`
-  - Windows: Download from https://ffmpeg.org/download.html
+### Standalone Executable
+- Windows 10+, macOS 10.14+, or Linux
+- FFmpeg (auto-installed on first run)
 
-### Optional Dependencies
-- **JavaScript Runtime** - Recommended for yt-dlp (Node.js, Deno, or QuickJS)
-  - Improves YouTube extraction reliability
-  - Install via: `npm install -g node` or follow yt-dlp documentation
+### Python Version
+- Python 3.9+
+- ffmpeg
+- See [Installation](guides/installation.md) for details
 
-## Documentation Structure
+## Links
 
-- **[Root Files](./root-files.md)** - Documentation for main entry points and configuration files
-- **[Downloader](./downloader.md)** - Core download functionality and YouTube integration
-- **[Menus](./menus.md)** - Interactive CLI menu system
-- **[Managers](./managers.md)** - File management, resume, and scheduling utilities
-- **[Utils](./utils.md)** - Utility functions for logging, loading, and system checks
-- **[Tools](./tools.md)** - Additional utility tools for library management
-- **[Data & Export](./data-export.md)** - Data storage and export formats
-- **[History](./history.md)** - Historical code and prototypes
-
-## Quick Navigation
-
-### Core Functionality
-- **Downloader**: Handles all music downloading logic using yt-dlp
-- **Menus**: Provides interactive command-line interface
-- **Managers**: Manages files, resumes downloads, and schedules tasks
-
-### Supporting Systems
-- **Utils**: Logging, data loading, and system resource checks
-- **Tools**: Library cleanup, format conversion, and dependency checks
-- **Data**: Stores tracks, playlists, and download history
-
-## Getting Started
-
-1. Start with [Root Files](./root-files.md) to understand the entry point
-2. Review [Downloader](./downloader.md) to understand core functionality
-3. Explore [Menus](./menus.md) to see how users interact with the system
-4. Check [Utils](./utils.md) and [Tools](./tools.md) for additional features
-
-## Finding Information
-
-Each documentation file follows this structure:
-- **Folder Overview**: Purpose and role in the system
-- **File Documentation**: For each file:
-  - **Purpose**: What the file does
-  - **How it works**: Key functions and logic flow
-  - **Dependencies**: What it imports/uses
-  - **Usage**: How it's used in the application
-
+- [GitHub Repository](https://github.com/Ssenseii/spotify-yt-dlp-downloader)
+- [Releases](https://github.com/Ssenseii/spotify-yt-dlp-downloader/releases)
+- [Issues](https://github.com/Ssenseii/spotify-yt-dlp-downloader/issues)

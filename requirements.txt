@@ -6,3 +6,5 @@ schedule
 questionary
 tqdm
 httpx
+PySide6
+pyinstaller

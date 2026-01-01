@@ -1,8 +1,21 @@
 import json
 import os
+import sys
 from typing import Any, Dict, Optional
 
-CONFIG_PATH = "config.json"
+
+def get_app_dir() -> str:
+    """Get the application directory (works for both script and frozen exe)."""
+    if getattr(sys, 'frozen', False):
+        # Running as compiled exe
+        return os.path.dirname(sys.executable)
+    else:
+        # Running as script
+        return os.path.dirname(os.path.abspath(__file__))
+
+
+APP_DIR = get_app_dir()
+CONFIG_PATH = os.path.join(APP_DIR, "config.json")
 
 # Default configuration values
 DEFAULT_CONFIG = {

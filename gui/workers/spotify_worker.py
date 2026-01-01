@@ -1,0 +1,221 @@
+"""Spotify API worker thread for fetching playlists and tracks."""
+
+from typing import List, Optional
+from PySide6.QtCore import QThread, Signal
+
+from spotify_api.auth import SpotifyPKCEAuth
+from spotify_api.data_loader import SpotifyDataLoader
+
+
+class SpotifyWorker(QThread):
+    """
+    Worker thread for Spotify API operations.
+
+    Signals:
+        playlists_loaded: Emitted when playlists are loaded
+        tracks_loaded: Emitted when tracks are loaded
+        liked_songs_loaded: Emitted when liked songs are loaded
+        error: Emitted on error
+        progress: Emitted during long operations
+    """
+
+    playlists_loaded = Signal(list)  # List of playlist dicts
+    tracks_loaded = Signal(str, list)  # playlist_id, list of track dicts
+    liked_songs_loaded = Signal(list)  # List of track dicts
+    error = Signal(str)  # Error message
+    progress = Signal(str, int, int)  # message, current, total
+
+    def __init__(self, config: dict, parent=None):
+        super().__init__(parent)
+        self.config = config
+        self._task = None
+        self._task_args = {}
+        self._cancelled = False
+
+    def fetch_playlists(self):
+        """Queue task to fetch user playlists."""
+        self._task = "playlists"
+        self._task_args = {}
+        self.start()
+
+    def fetch_playlist_tracks(self, playlist_id: str, playlist_name: str = ""):
+        """Queue task to fetch tracks from a playlist."""
+        self._task = "playlist_tracks"
+        self._task_args = {"playlist_id": playlist_id, "playlist_name": playlist_name}
+        self.start()
+
+    def fetch_liked_songs(self):
+        """Queue task to fetch user's liked songs."""
+        self._task = "liked_songs"
+        self._task_args = {}
+        self.start()
+
+    def run(self):
+        """Execute the queued task."""
+        self._cancelled = False
+
+        try:
+            # Get access token
+            auth = SpotifyPKCEAuth(self.config)
+            token_info = auth.load_cached_token()
+
+            if not token_info or not token_info.access_token:
+                self.error.emit("Not connected to Spotify. Please log in first.")
+                return
+
+            # Check if token needs refresh
+            if token_info.is_expired():
+                if token_info.refresh_token:
+                    try:
+                        token_info = auth.refresh_access_token(
+                            refresh_token=token_info.refresh_token
+                        )
+                    except Exception as e:
+                        self.error.emit(f"Failed to refresh token: {e}")
+                        return
+                else:
+                    self.error.emit("Token expired. Please log in again.")
+                    return
+
+            # Create data loader
+            loader = SpotifyDataLoader(self.config, access_token=token_info.access_token)
+
+            # Execute task
+            if self._task == "playlists":
+                self._fetch_playlists(loader)
+            elif self._task == "playlist_tracks":
+                self._fetch_playlist_tracks(loader)
+            elif self._task == "liked_songs":
+                self._fetch_liked_songs(loader)
+
+        except Exception as e:
+            if not self._cancelled:
+                self.error.emit(str(e))
+
+    def _fetch_playlists(self, loader: SpotifyDataLoader):
+        """Fetch all user playlists."""
+        self.progress.emit("Fetching playlists...", 0, 0)
+
+        playlists = []
+        offset = 0
+        limit = 50
+
+        while not self._cancelled:
+            result = loader.get_user_playlists(limit=limit, offset=offset)
+            items = result.get("items", [])
+
+            for item in items:
+                playlist = {
+                    "id": item.get("id"),
+                    "name": item.get("name"),
+                    "owner": item.get("owner", {}).get("display_name", "Unknown"),
+                    "tracks_total": item.get("tracks", {}).get("total", 0),
+                    "image_url": item.get("images", [{}])[0].get("url") if item.get("images") else None,
+                }
+                playlists.append(playlist)
+
+            total = result.get("total", 0)
+            self.progress.emit(f"Loaded {len(playlists)} of {total} playlists", len(playlists), total)
+
+            if result.get("next"):
+                offset += limit
+            else:
+                break
+
+        if not self._cancelled:
+            self.playlists_loaded.emit(playlists)
+
+    def _fetch_playlist_tracks(self, loader: SpotifyDataLoader):
+        """Fetch tracks from a specific playlist."""
+        playlist_id = self._task_args.get("playlist_id")
+        playlist_name = self._task_args.get("playlist_name", "")
+
+        self.progress.emit(f"Fetching tracks from {playlist_name}...", 0, 0)
+
+        tracks = []
+        offset = 0
+        limit = 100
+
+        while not self._cancelled:
+            result = loader.get_playlist_tracks(playlist_id, limit=limit, offset=offset)
+            items = result.get("items", [])
+
+            for item in items:
+                track_obj = item.get("track")
+                if not track_obj:
+                    continue
+
+                # Skip local files and unavailable tracks
+                if track_obj.get("is_local") or not track_obj.get("id"):
+                    continue
+
+                artists = [a.get("name", "") for a in track_obj.get("artists", [])]
+                track = {
+                    "artist": ", ".join(artists) if artists else "Unknown Artist",
+                    "track": track_obj.get("name", "Unknown Track"),
+                    "album": track_obj.get("album", {}).get("name", ""),
+                    "duration_ms": track_obj.get("duration_ms", 0),
+                    "spotify_id": track_obj.get("id"),
+                }
+                tracks.append(track)
+
+            total = result.get("total", 0)
+            self.progress.emit(
+                f"Loaded {len(tracks)} of {total} tracks from {playlist_name}",
+                len(tracks),
+                total
+            )
+
+            if result.get("next"):
+                offset += limit
+            else:
+                break
+
+        if not self._cancelled:
+            self.tracks_loaded.emit(playlist_id, tracks)
+
+    def _fetch_liked_songs(self, loader: SpotifyDataLoader):
+        """Fetch user's liked songs."""
+        self.progress.emit("Fetching liked songs...", 0, 0)
+
+        tracks = []
+        offset = 0
+        limit = 50
+
+        while not self._cancelled:
+            result = loader.get_saved_tracks(limit=limit, offset=offset)
+            items = result.get("items", [])
+
+            for item in items:
+                track_obj = item.get("track")
+                if not track_obj:
+                    continue
+
+                # Skip local files
+                if track_obj.get("is_local") or not track_obj.get("id"):
+                    continue
+
+                artists = [a.get("name", "") for a in track_obj.get("artists", [])]
+                track = {
+                    "artist": ", ".join(artists) if artists else "Unknown Artist",
+                    "track": track_obj.get("name", "Unknown Track"),
+                    "album": track_obj.get("album", {}).get("name", ""),
+                    "duration_ms": track_obj.get("duration_ms", 0),
+                    "spotify_id": track_obj.get("id"),
+                }
+                tracks.append(track)
+
+            total = result.get("total", 0)
+            self.progress.emit(f"Loaded {len(tracks)} of {total} liked songs", len(tracks), total)
+
+            if result.get("next"):
+                offset += limit
+            else:
+                break
+
+        if not self._cancelled:
+            self.liked_songs_loaded.emit(tracks)
+
+    def cancel(self):
+        """Cancel the current operation."""
+        self._cancelled = True
