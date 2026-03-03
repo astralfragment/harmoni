@@ -340,7 +340,18 @@ class MainWindow(QMainWindow):
 
     def _on_config_saved(self):
         """Handle config save from settings."""
-        self.status_label.setText("Settings saved")
+        # Reload config from file
+        from config import load_config
+        try:
+            self.config = load_config()
+            # Update all views with the new config
+            self.spotify_view.config = self.config
+            self.youtube_view.config = self.config
+            self.downloads_view.config = self.config
+            self.welcome_view.config = self.config
+            self.status_label.setText("Settings saved successfully")
+        except Exception as e:
+            self.status_label.setText(f"Error reloading config: {e}")
 
     def set_status(self, message: str):
         """Set status bar message."""

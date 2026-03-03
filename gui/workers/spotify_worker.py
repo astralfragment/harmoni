@@ -4,7 +4,8 @@ from typing import List, Optional
 from PySide6.QtCore import QThread, Signal
 
 from spotify_api.auth import SpotifyPKCEAuth
-from spotify_api.data_loader import SpotifyDataLoader
+from spotify_api.client import SpotifyClient
+from spotify_api.token_manager import TokenManager
 
 
 class SpotifyWorker(QThread):
@@ -64,7 +65,7 @@ class SpotifyWorker(QThread):
                 return
 
             # Check if token needs refresh
-            if token_info.is_expired():
+            if TokenManager.is_expired(token_info):
                 if token_info.refresh_token:
                     try:
                         token_info = auth.refresh_access_token(
@@ -77,22 +78,23 @@ class SpotifyWorker(QThread):
                     self.error.emit("Token expired. Please log in again.")
                     return
 
-            # Create data loader
-            loader = SpotifyDataLoader(self.config, access_token=token_info.access_token)
+            # Create Spotify client
+            client = SpotifyClient(self.config)
+            client.set_token(token_info)
 
             # Execute task
             if self._task == "playlists":
-                self._fetch_playlists(loader)
+                self._fetch_playlists(client)
             elif self._task == "playlist_tracks":
-                self._fetch_playlist_tracks(loader)
+                self._fetch_playlist_tracks(client)
             elif self._task == "liked_songs":
-                self._fetch_liked_songs(loader)
+                self._fetch_liked_songs(client)
 
         except Exception as e:
             if not self._cancelled:
                 self.error.emit(str(e))
 
-    def _fetch_playlists(self, loader: SpotifyDataLoader):
+    def _fetch_playlists(self, client: SpotifyClient):
         """Fetch all user playlists."""
         self.progress.emit("Fetching playlists...", 0, 0)
 
@@ -101,7 +103,7 @@ class SpotifyWorker(QThread):
         limit = 50
 
         while not self._cancelled:
-            result = loader.get_user_playlists(limit=limit, offset=offset)
+            result = client.current_user_playlists(limit=limit, offset=offset)
             items = result.get("items", [])
 
             for item in items:
@@ -125,7 +127,7 @@ class SpotifyWorker(QThread):
         if not self._cancelled:
             self.playlists_loaded.emit(playlists)
 
-    def _fetch_playlist_tracks(self, loader: SpotifyDataLoader):
+    def _fetch_playlist_tracks(self, client: SpotifyClient):
         """Fetch tracks from a specific playlist."""
         playlist_id = self._task_args.get("playlist_id")
         playlist_name = self._task_args.get("playlist_name", "")
@@ -137,7 +139,7 @@ class SpotifyWorker(QThread):
         limit = 100
 
         while not self._cancelled:
-            result = loader.get_playlist_tracks(playlist_id, limit=limit, offset=offset)
+            result = client.playlist_items(playlist_id, limit=limit, offset=offset)
             items = result.get("items", [])
 
             for item in items:
@@ -174,7 +176,7 @@ class SpotifyWorker(QThread):
         if not self._cancelled:
             self.tracks_loaded.emit(playlist_id, tracks)
 
-    def _fetch_liked_songs(self, loader: SpotifyDataLoader):
+    def _fetch_liked_songs(self, client: SpotifyClient):
         """Fetch user's liked songs."""
         self.progress.emit("Fetching liked songs...", 0, 0)
 
@@ -183,7 +185,7 @@ class SpotifyWorker(QThread):
         limit = 50
 
         while not self._cancelled:
-            result = loader.get_saved_tracks(limit=limit, offset=offset)
+            result = client.current_user_saved_tracks(limit=limit, offset=offset)
             items = result.get("items", [])
 
             for item in items:

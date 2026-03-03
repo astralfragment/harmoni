@@ -13,6 +13,7 @@ from gui.workers.download_queue import DownloadQueue
 from gui.workers.spotify_worker import SpotifyWorker
 from gui.dialogs.oauth_dialog import SpotifyOAuthDialog
 from spotify_api.auth import SpotifyPKCEAuth
+from spotify_api.token_manager import TokenManager
 
 
 class SpotifyView(QWidget):
@@ -158,7 +159,7 @@ class SpotifyView(QWidget):
 
         if token and token.access_token:
             # Check if expired
-            if token.is_expired():
+            if TokenManager.is_expired(token):
                 if token.refresh_token:
                     try:
                         auth.refresh_access_token(refresh_token=token.refresh_token)

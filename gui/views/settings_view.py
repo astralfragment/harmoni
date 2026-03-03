@@ -10,8 +10,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Signal
 
-from config import save_config, validate_config, DEFAULT_CONFIG
+from config import save_config, validate_config, DEFAULT_CONFIG, load_config
 from utils.ffmpeg import check_ffmpeg_available
+from tools.ytdlp_update_checker import check_ytdlp_updates
 
 
 class SettingsView(QWidget):
@@ -23,9 +24,11 @@ class SettingsView(QWidget):
         super().__init__(parent)
         self.config = config
         self.ffmpeg_worker = None
+        self.ytdlp_worker = None
         self._setup_ui()
         self._load_values()
         self._check_ffmpeg_status()
+        self._check_ytdlp_status()
 
     def _setup_ui(self):
         """Set up the settings UI."""
@@ -94,6 +97,54 @@ class SettingsView(QWidget):
         ffmpeg_layout.addWidget(ffmpeg_help)
 
         layout.addWidget(ffmpeg_group)
+
+        # yt-dlp Status Group
+        ytdlp_group = QGroupBox("yt-dlp Status")
+        ytdlp_layout = QVBoxLayout(ytdlp_group)
+        ytdlp_layout.setSpacing(10)
+
+        # Status row
+        ytdlp_status_row = QHBoxLayout()
+        self.ytdlp_status_icon = QLabel("●")
+        self.ytdlp_status_icon.setFixedWidth(20)
+        ytdlp_status_row.addWidget(self.ytdlp_status_icon)
+
+        self.ytdlp_status_label = QLabel("Checking...")
+        ytdlp_status_row.addWidget(self.ytdlp_status_label, 1)
+
+        self.ytdlp_update_btn = QPushButton("Check for Updates")
+        self.ytdlp_update_btn.setObjectName("secondary")
+        self.ytdlp_update_btn.clicked.connect(self._check_ytdlp_updates)
+        ytdlp_status_row.addWidget(self.ytdlp_update_btn)
+
+        self.ytdlp_refresh_btn = QPushButton("Refresh")
+        self.ytdlp_refresh_btn.setObjectName("secondary")
+        self.ytdlp_refresh_btn.setFixedWidth(70)
+        self.ytdlp_refresh_btn.clicked.connect(self._check_ytdlp_status)
+        ytdlp_status_row.addWidget(self.ytdlp_refresh_btn)
+
+        ytdlp_layout.addLayout(ytdlp_status_row)
+
+        # Progress bar (hidden by default)
+        self.ytdlp_progress = QProgressBar()
+        self.ytdlp_progress.setVisible(False)
+        ytdlp_layout.addWidget(self.ytdlp_progress)
+
+        self.ytdlp_progress_label = QLabel("")
+        self.ytdlp_progress_label.setObjectName("subtitle")
+        self.ytdlp_progress_label.setVisible(False)
+        ytdlp_layout.addWidget(self.ytdlp_progress_label)
+
+        # Help text
+        ytdlp_help = QLabel(
+            "yt-dlp is required for downloading videos from various sources. "
+            "Click 'Check for Updates' to update to the latest version."
+        )
+        ytdlp_help.setObjectName("subtitle")
+        ytdlp_help.setWordWrap(True)
+        ytdlp_layout.addWidget(ytdlp_help)
+
+        layout.addWidget(ytdlp_group)
 
         # Output Settings Group
         output_group = QGroupBox("Output Settings")
@@ -313,6 +364,120 @@ class SettingsView(QWidget):
         # Clean up worker
         self.ffmpeg_worker = None
 
+    def _check_ytdlp_status(self):
+        """Check yt-dlp installation and version status."""
+        update_info = check_ytdlp_updates()
+
+        if not update_info:
+            self.ytdlp_status_icon.setStyleSheet("color: #ff9800; font-size: 14px;")
+            self.ytdlp_status_label.setText("Could not check version")
+            self.ytdlp_status_label.setStyleSheet("color: #ff9800;")
+            self.ytdlp_update_btn.setEnabled(False)
+            return
+
+        current_version = update_info.get("current_version")
+        has_update = update_info.get("update_available", False)
+
+        if not current_version:
+            self.ytdlp_status_icon.setStyleSheet("color: #ef5350; font-size: 14px;")
+            self.ytdlp_status_label.setText("Not installed")
+            self.ytdlp_status_label.setStyleSheet("color: #ef5350;")
+            self.ytdlp_update_btn.setText("Install yt-dlp")
+            self.ytdlp_update_btn.setEnabled(True)
+        elif has_update:
+            latest_version = update_info.get("latest_version")
+            self.ytdlp_status_icon.setStyleSheet("color: #ff9800; font-size: 14px;")
+            self.ytdlp_status_label.setText(f"Update available: {current_version} → {latest_version}")
+            self.ytdlp_status_label.setStyleSheet("color: #ff9800;")
+            self.ytdlp_update_btn.setText("Update yt-dlp")
+            self.ytdlp_update_btn.setEnabled(True)
+        else:
+            self.ytdlp_status_icon.setStyleSheet("color: #4caf50; font-size: 14px;")
+            self.ytdlp_status_label.setText(f"Up to date: {current_version}")
+            self.ytdlp_status_label.setStyleSheet("color: #4caf50;")
+            self.ytdlp_update_btn.setText("Check for Updates")
+            self.ytdlp_update_btn.setEnabled(True)
+
+    def _check_ytdlp_updates(self):
+        """Start yt-dlp update check and installation."""
+        from gui.workers.ytdlp_updater import YtdlpUpdaterWorker
+
+        # Confirm update
+        update_info = check_ytdlp_updates()
+        current_version = update_info.get("current_version") if update_info else None
+        has_update = update_info.get("update_available", False) if update_info else False
+
+        if current_version and has_update:
+            latest_version = update_info.get("latest_version")
+            message = (
+                f"Update yt-dlp from {current_version} to {latest_version}?\n\n"
+                "This will download and install the latest version.\n\n"
+                "Continue?"
+            )
+        elif not current_version:
+            message = (
+                "yt-dlp is not installed. Install it now?\n\n"
+                "This will download and install yt-dlp via pip.\n\n"
+                "Continue?"
+            )
+        else:
+            message = (
+                f"yt-dlp is already up to date ({current_version}).\n\n"
+                "Check for updates anyway?"
+            )
+
+        reply = QMessageBox.question(
+            self,
+            "Update yt-dlp",
+            message,
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.Yes
+        )
+
+        if reply != QMessageBox.Yes:
+            return
+
+        # Disable buttons during update
+        self.ytdlp_update_btn.setEnabled(False)
+        self.ytdlp_refresh_btn.setEnabled(False)
+
+        # Show progress
+        self.ytdlp_progress.setVisible(True)
+        self.ytdlp_progress_label.setVisible(True)
+        self.ytdlp_progress.setValue(0)
+
+        # Create and start worker
+        self.ytdlp_worker = YtdlpUpdaterWorker()
+        self.ytdlp_worker.progress.connect(self._on_ytdlp_progress)
+        self.ytdlp_worker.finished.connect(self._on_ytdlp_finished)
+        self.ytdlp_worker.start()
+
+    def _on_ytdlp_progress(self, percent: int, message: str):
+        """Handle yt-dlp update progress."""
+        self.ytdlp_progress.setValue(percent)
+        self.ytdlp_progress_label.setText(message)
+
+    def _on_ytdlp_finished(self, success: bool, message: str):
+        """Handle yt-dlp update completion."""
+        # Hide progress
+        self.ytdlp_progress.setVisible(False)
+        self.ytdlp_progress_label.setVisible(False)
+
+        # Re-enable buttons
+        self.ytdlp_update_btn.setEnabled(True)
+        self.ytdlp_refresh_btn.setEnabled(True)
+
+        # Show result
+        if success:
+            QMessageBox.information(self, "Success", message)
+            self._check_ytdlp_status()
+        else:
+            QMessageBox.warning(self, "Update Failed", message)
+            self._check_ytdlp_status()
+
+        # Clean up worker
+        self.ytdlp_worker = None
+
     def _browse_output_dir(self):
         """Open folder browser for output directory."""
         current_dir = self.output_dir_input.text() or os.path.expanduser("~")
@@ -380,6 +545,9 @@ class SettingsView(QWidget):
 
             # Save
             save_config(self.config)
+            # Reload config to ensure fresh state
+            self.config = load_config()
+            self._load_values()  # Refresh UI to show saved values
             self.config_saved.emit()
             QMessageBox.information(self, "Success", "Settings saved successfully!")
 
