@@ -25,6 +25,15 @@ if __name__ == "__main__":
         log_error(f"Error loading config: {e}")
         exit(1)
 
+    # Check for yt-dlp updates
+    try:
+        from tools.ytdlp_update_checker import check_ytdlp_updates, notify_update_available
+        update_info = check_ytdlp_updates()
+        if update_info:
+            notify_update_available(update_info)
+    except Exception:
+        pass  # Silently ignore update check failures
+
     os.makedirs(config["output_dir"], exist_ok=True)
 
     # CSV-first startup checks (non-fatal)
