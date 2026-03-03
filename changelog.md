@@ -1,94 +1,31 @@
-## Changelog
+# Changelog
 
 All notable changes to this project will be documented in this file.
 
----
-
-### 0.5.0 - 2025-DEC-31
+## [1.1.0] - 2026-03-03
 
 ### Added
-
-- **Desktop GUI Application** 
-    - A new graphical user interface for HARMONI
-    - Modern dark theme with professional styling
-    - Welcome screen with step-by-step Exportify instructions
-    - Drag-and-drop CSV import for Exportify files
-    - Sidebar navigation for Spotify, YouTube, Downloads, and Settings
-    - Download queue management with progress tracking
-    - Settings panel for audio format, output folder, and preferences
+- **yt-dlp Update Checker & Installer**: Implemented a comprehensive update system for yt-dlp with:
+  - Automatic update detection through the update checker module
+  - In-app notifications to alert users when updates are available
+  - One-click installer for seamless yt-dlp updates
+  - New `ytdlp_updater.py` worker module handling update logic in GUI thread
 
 ### Changed
+- **Settings View**: Now automatically reloads configuration on save and updates the UI to reflect changes immediately
+- **Spotify Integration**: Refactored token expiration checking to use the TokenManager, improving code maintainability and centralizing token lifecycle management
+- **Main Window**: Updated to support the new yt-dlp update checker integration
 
-- Improved UI spacing, font sizes, and button sizing for better readability
+### Why
+These changes were made to improve user experience and code quality:
+1. Users can now keep yt-dlp updated without manual intervention, ensuring access to the latest features and bug fixes
+2. Settings changes take immediate effect without requiring app restart (I think you'll have to reload the app after installing yt-dlp because visually it shows not installed)
+3. Centralized token management through TokenManager reduces duplication and potential bugs in token handling across different parts of the application
+4. when you open the app, there will be some quick cli openings which is a bit scary but don't worry, it's just small scripts to check for things if they are there or not.
 
-
----
-
-### 0.4.1 - 2025-AUG-21
-
-### Changed
-
-- Better Logging for failed downloads
-- Upgrade guide for YT-DLP in case of failed downloads
-
----
-
-### 0.4.0 - 2025-AUG-21
+## [1.0.0] - 2026-01-01
 
 ### Added
-
-- Ability to download playlists directly from Exportify CSV files placed in data/exportify/.
-- CSVs are auto-scanned, playlists confirmed with the user, and batch downloaded.
-
-### Changed
-- removed shutil and added python version (from merge request, thank you Artisan Memory)
-- added tqdm to requirements.txt
-
----
-
-### 0.3.0 - 2025-AUG-13
-
-### Added
-
-- Download from youtube using links (playlist or video) as audio format
-
----
-
-### 0.2.0 - 2025-AUG-11
-
-### Added
-
-- Centralized all constants (audio formats, bitrates, dependencies, file paths) into a single `constants.py` file.
-- Added system dependency checks for required binaries like `yt-dlp` and `ffmpeg`.
-- Improved missing dependency detection to distinguish between Python packages and system binaries.
-- Added descriptive bitrate choices with explanations to inform users of quality/size tradeoffs.
-- Added function to open the app’s log file (`app.log`) directly in Notepad for easy debugging.
-
-### Changed
-
-- Updated dependency checker to avoid false positives for standard libraries (e.g., `shutil`).
-- Enhanced “choose audio format” menu to always highlight the currently active format.
-- Refactored code to use constants from the centralized constants file instead of hardcoded values.
-
-### Fixed
-
-- Fixed incorrect missing dependency for system binaries and stdlib modules.
-- Improved error messages and logging for missing dependencies.
-
----
-
-### 0.1.0 - 2025-AUG-09
-
-### Added 
-- Support for importing playlists from Spotify’s playlist files.
-- Option to download entire playlists in bulk or pick individual playlists.
-- New interactive menu system replacing numbered menus.
-
-### Changed
-- Menus are now organized into their own sub-directory (`menus/`) for better project structure.
-- Playlist import removed as it wasn't working, switched with new playlist file usage directly
-
-### Fixed
-- Bug fix: program no longer crashes when `failed_downloads.json` is empty.
-- Bug fix: Weird behavior when no song or artist name are given when searching for a track
-- Bug fix: "Unknown Artist" used when no artist name is given
+- Initial stable release of Harmoni
+- GUI version 1.0.0 with core features
+- Initial yt-dlp update checker foundation
