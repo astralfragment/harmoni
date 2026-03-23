@@ -65,13 +65,6 @@ jobs:
             --strip \
             gui_main.py
 
-      - name: Verify bundled binaries
-        run: |
-          echo "=== App bundle structure ==="
-          find dist/HARMONI.app -name "yt-dlp" -o -name "ffmpeg" -o -name "ffprobe" 2>/dev/null || true
-          echo "=== bin/ contents ==="
-          ls -la dist/HARMONI.app/Contents/_internal/bin/ 2>/dev/null || ls -la dist/HARMONI.app/Contents/MacOS/bin/ 2>/dev/null || echo "bin/ not found in expected locations"
-
       - name: Detect architecture
         id: arch
         run: echo "arch=$(uname -m)" >> "$GITHUB_OUTPUT"

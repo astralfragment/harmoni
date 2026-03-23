@@ -146,6 +146,46 @@ class SettingsView(QWidget):
 
         layout.addWidget(ytdlp_group)
 
+        # Binary Paths Group
+        paths_group = QGroupBox("Binary Paths")
+        paths_layout = QFormLayout(paths_group)
+        paths_layout.setSpacing(12)
+
+        # FFmpeg path
+        ffmpeg_path_layout = QHBoxLayout()
+        self.ffmpeg_path_input = QLineEdit()
+        self.ffmpeg_path_input.setPlaceholderText("Auto-detect (leave empty)")
+        ffmpeg_path_layout.addWidget(self.ffmpeg_path_input)
+        ffmpeg_browse_btn = QPushButton("Browse")
+        ffmpeg_browse_btn.setObjectName("secondary")
+        ffmpeg_browse_btn.setFixedWidth(70)
+        ffmpeg_browse_btn.clicked.connect(self._browse_ffmpeg_path)
+        ffmpeg_path_layout.addWidget(ffmpeg_browse_btn)
+        paths_layout.addRow("FFmpeg Path:", ffmpeg_path_layout)
+
+        # yt-dlp path
+        ytdlp_path_layout = QHBoxLayout()
+        self.ytdlp_path_input = QLineEdit()
+        self.ytdlp_path_input.setPlaceholderText("Auto-detect (leave empty)")
+        ytdlp_path_layout.addWidget(self.ytdlp_path_input)
+        ytdlp_browse_btn = QPushButton("Browse")
+        ytdlp_browse_btn.setObjectName("secondary")
+        ytdlp_browse_btn.setFixedWidth(70)
+        ytdlp_browse_btn.clicked.connect(self._browse_ytdlp_path)
+        ytdlp_path_layout.addWidget(ytdlp_browse_btn)
+        paths_layout.addRow("yt-dlp Path:", ytdlp_path_layout)
+
+        # Help text
+        paths_help = QLabel(
+            "Set custom paths if auto-detection fails. "
+            "Leave empty to use bundled or system binaries."
+        )
+        paths_help.setObjectName("subtitle")
+        paths_help.setWordWrap(True)
+        paths_layout.addRow("", paths_help)
+
+        layout.addWidget(paths_group)
+
         # Output Settings Group
         output_group = QGroupBox("Output Settings")
         output_layout = QFormLayout(output_group)
@@ -289,6 +329,8 @@ class SettingsView(QWidget):
         self.musicbrainz_check.setChecked(self.config.get("enable_musicbrainz_lookup", True))
         self.backup_check.setChecked(self.config.get("auto_backup", True))
         self.max_backups_input.setText(str(self.config.get("max_backups", 10)))
+        self.ffmpeg_path_input.setText(self.config.get("ffmpeg_path", ""))
+        self.ytdlp_path_input.setText(self.config.get("ytdlp_path", ""))
 
     def _check_ffmpeg_status(self):
         """Check FFmpeg installation status."""
@@ -479,6 +521,18 @@ class SettingsView(QWidget):
         # Clean up worker
         self.ytdlp_worker = None
 
+    def _browse_ffmpeg_path(self):
+        """Open file browser for FFmpeg binary."""
+        path, _ = QFileDialog.getOpenFileName(self, "Select FFmpeg Binary")
+        if path:
+            self.ffmpeg_path_input.setText(path)
+
+    def _browse_ytdlp_path(self):
+        """Open file browser for yt-dlp binary."""
+        path, _ = QFileDialog.getOpenFileName(self, "Select yt-dlp Binary")
+        if path:
+            self.ytdlp_path_input.setText(path)
+
     def _browse_output_dir(self):
         """Open folder browser for output directory."""
         current_dir = self.output_dir_input.text() or os.path.expanduser("~")
@@ -525,6 +579,8 @@ class SettingsView(QWidget):
             self.config["enable_musicbrainz_lookup"] = self.musicbrainz_check.isChecked()
             self.config["auto_backup"] = self.backup_check.isChecked()
             self.config["max_backups"] = int(self.max_backups_input.text() or 10)
+            self.config["ffmpeg_path"] = self.ffmpeg_path_input.text().strip()
+            self.config["ytdlp_path"] = self.ytdlp_path_input.text().strip()
 
             # Validate
             is_valid, errors = validate_config(self.config)
