@@ -148,41 +148,41 @@ class SettingsView(QWidget):
 
         # Binary Paths Group
         paths_group = QGroupBox("Binary Paths")
-        paths_layout = QFormLayout(paths_group)
-        paths_layout.setSpacing(12)
+        paths_layout = QVBoxLayout(paths_group)
+        paths_layout.setSpacing(10)
 
         # FFmpeg path
-        ffmpeg_path_layout = QHBoxLayout()
+        paths_layout.addWidget(QLabel("FFmpeg"))
+        ffmpeg_path_row = QHBoxLayout()
         self.ffmpeg_path_input = QLineEdit()
         self.ffmpeg_path_input.setPlaceholderText("Auto-detect (leave empty)")
-        ffmpeg_path_layout.addWidget(self.ffmpeg_path_input)
+        ffmpeg_path_row.addWidget(self.ffmpeg_path_input, 1)
         ffmpeg_browse_btn = QPushButton("Browse")
         ffmpeg_browse_btn.setObjectName("secondary")
         ffmpeg_browse_btn.setFixedWidth(70)
         ffmpeg_browse_btn.clicked.connect(self._browse_ffmpeg_path)
-        ffmpeg_path_layout.addWidget(ffmpeg_browse_btn)
-        paths_layout.addRow("FFmpeg Path:", ffmpeg_path_layout)
+        ffmpeg_path_row.addWidget(ffmpeg_browse_btn)
+        paths_layout.addLayout(ffmpeg_path_row)
 
         # yt-dlp path
-        ytdlp_path_layout = QHBoxLayout()
+        paths_layout.addWidget(QLabel("yt-dlp"))
+        ytdlp_path_row = QHBoxLayout()
         self.ytdlp_path_input = QLineEdit()
         self.ytdlp_path_input.setPlaceholderText("Auto-detect (leave empty)")
-        ytdlp_path_layout.addWidget(self.ytdlp_path_input)
+        ytdlp_path_row.addWidget(self.ytdlp_path_input, 1)
         ytdlp_browse_btn = QPushButton("Browse")
         ytdlp_browse_btn.setObjectName("secondary")
         ytdlp_browse_btn.setFixedWidth(70)
         ytdlp_browse_btn.clicked.connect(self._browse_ytdlp_path)
-        ytdlp_path_layout.addWidget(ytdlp_browse_btn)
-        paths_layout.addRow("yt-dlp Path:", ytdlp_path_layout)
+        ytdlp_path_row.addWidget(ytdlp_browse_btn)
+        paths_layout.addLayout(ytdlp_path_row)
 
-        # Help text
         paths_help = QLabel(
-            "Set custom paths if auto-detection fails. "
-            "Leave empty to use bundled or system binaries."
+            "Set custom paths if auto-detection fails. Leave empty to use bundled or system binaries."
         )
         paths_help.setObjectName("subtitle")
         paths_help.setWordWrap(True)
-        paths_layout.addRow("", paths_help)
+        paths_layout.addWidget(paths_help)
 
         layout.addWidget(paths_group)
 
@@ -408,36 +408,57 @@ class SettingsView(QWidget):
 
     def _check_ytdlp_status(self):
         """Check yt-dlp installation and version status."""
-        update_info = check_ytdlp_updates()
+        import shutil
+        import subprocess
 
-        if not update_info:
+        version = None
+        found = False
+
+        # Check custom path from config first (instant, no subprocess)
+        custom_path = self.config.get("ytdlp_path", "")
+        if custom_path and os.path.isfile(custom_path):
+            found = True
+            try:
+                result = subprocess.run(
+                    [custom_path, "--version"],
+                    capture_output=True, text=True, timeout=3
+                )
+                if result.returncode == 0:
+                    version = result.stdout.strip()
+            except Exception:
+                pass
+        else:
+            # Check PATH
+            ytdlp_bin = shutil.which("yt-dlp")
+            if ytdlp_bin:
+                found = True
+                try:
+                    result = subprocess.run(
+                        [ytdlp_bin, "--version"],
+                        capture_output=True, text=True, timeout=3
+                    )
+                    if result.returncode == 0:
+                        version = result.stdout.strip()
+                except Exception:
+                    pass
+
+        if found and version:
+            self.ytdlp_status_icon.setStyleSheet("color: #4caf50; font-size: 14px;")
+            self.ytdlp_status_label.setText(f"Installed: {version}")
+            self.ytdlp_status_label.setStyleSheet("color: #4caf50;")
+            self.ytdlp_update_btn.setText("Check for Updates")
+            self.ytdlp_update_btn.setEnabled(True)
+        elif found:
             self.ytdlp_status_icon.setStyleSheet("color: #ff9800; font-size: 14px;")
-            self.ytdlp_status_label.setText("Could not check version")
+            self.ytdlp_status_label.setText("Found but could not get version")
             self.ytdlp_status_label.setStyleSheet("color: #ff9800;")
-            self.ytdlp_update_btn.setEnabled(False)
-            return
-
-        current_version = update_info.get("current_version")
-        has_update = update_info.get("update_available", False)
-
-        if not current_version:
+            self.ytdlp_update_btn.setText("Check for Updates")
+            self.ytdlp_update_btn.setEnabled(True)
+        else:
             self.ytdlp_status_icon.setStyleSheet("color: #ef5350; font-size: 14px;")
             self.ytdlp_status_label.setText("Not installed")
             self.ytdlp_status_label.setStyleSheet("color: #ef5350;")
             self.ytdlp_update_btn.setText("Install yt-dlp")
-            self.ytdlp_update_btn.setEnabled(True)
-        elif has_update:
-            latest_version = update_info.get("latest_version")
-            self.ytdlp_status_icon.setStyleSheet("color: #ff9800; font-size: 14px;")
-            self.ytdlp_status_label.setText(f"Update available: {current_version} → {latest_version}")
-            self.ytdlp_status_label.setStyleSheet("color: #ff9800;")
-            self.ytdlp_update_btn.setText("Update yt-dlp")
-            self.ytdlp_update_btn.setEnabled(True)
-        else:
-            self.ytdlp_status_icon.setStyleSheet("color: #4caf50; font-size: 14px;")
-            self.ytdlp_status_label.setText(f"Up to date: {current_version}")
-            self.ytdlp_status_label.setStyleSheet("color: #4caf50;")
-            self.ytdlp_update_btn.setText("Check for Updates")
             self.ytdlp_update_btn.setEnabled(True)
 
     def _check_ytdlp_updates(self):
@@ -502,24 +523,23 @@ class SettingsView(QWidget):
 
     def _on_ytdlp_finished(self, success: bool, message: str):
         """Handle yt-dlp update completion."""
-        # Hide progress
         self.ytdlp_progress.setVisible(False)
         self.ytdlp_progress_label.setVisible(False)
-
-        # Re-enable buttons
         self.ytdlp_update_btn.setEnabled(True)
         self.ytdlp_refresh_btn.setEnabled(True)
 
-        # Show result
         if success:
+            # Ensure newly installed binary's dir is on PATH
+            if hasattr(self.ytdlp_worker, 'install_dir'):
+                install_dir = self.ytdlp_worker.install_dir
+                if install_dir not in os.environ.get('PATH', ''):
+                    os.environ['PATH'] = install_dir + os.pathsep + os.environ.get('PATH', '')
             QMessageBox.information(self, "Success", message)
-            self._check_ytdlp_status()
         else:
-            QMessageBox.warning(self, "Update Failed", message)
-            self._check_ytdlp_status()
+            QMessageBox.warning(self, "Install Failed", message)
 
-        # Clean up worker
         self.ytdlp_worker = None
+        self._check_ytdlp_status()
 
     def _browse_ffmpeg_path(self):
         """Open file browser for FFmpeg binary."""
