@@ -18,8 +18,8 @@ The easiest way to use HARMONI - no installation required.
 
 ### Download
 
-1. Go to [GitHub Releases](https://github.com/Ssenseii/spotify-yt-dlp-downloader/releases)
-2. Download `HARMONI.exe` (Windows) or `HARMONI` (Linux/macOS)
+1. Go to [GitHub Releases](https://github.com/Ssenseii/harmoni/releases)
+2. Download `HARMONI.exe` (Windows) or `HARMONI-macos-arm64.dmg` (macOS)
 3. Double-click to run
 
 ### First Run
@@ -88,8 +88,8 @@ This script:
 #### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Ssenseii/spotify-yt-dlp-downloader.git
-cd spotify-yt-dlp-downloader
+git clone https://github.com/Ssenseii/harmoni.git
+cd harmoni
 ```
 
 #### 2. Create Virtual Environment
@@ -135,7 +135,7 @@ Run HARMONI in a container without installing Python.
 docker compose build
 
 # Run interactively
-docker compose run --rm --service-ports spotify-yt-dlp-downloader
+docker compose run --rm --service-ports harmoni
 ```
 
 ### Using Docker Directly
@@ -187,7 +187,7 @@ Or use the GUI:
 ### Upgrade HARMONI
 
 ```bash
-cd spotify-yt-dlp-downloader
+cd harmoni
 git pull
 pip install -r requirements.txt
 ```

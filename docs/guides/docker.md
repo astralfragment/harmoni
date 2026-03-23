@@ -16,7 +16,7 @@ Run HARMONI in Docker without installing Python or ffmpeg locally.
 docker compose build
 
 # Run the application
-docker compose run --rm --service-ports spotify-yt-dlp-downloader
+docker compose run --rm --service-ports harmoni
 ```
 
 > For older Docker versions, use `docker-compose` instead.
@@ -27,7 +27,7 @@ docker compose run --rm --service-ports spotify-yt-dlp-downloader
 
 ```bash
 # Build the image
-docker build -t spotify-yt-dlp-downloader .
+docker build -t harmoni .
 
 # Run the container
 docker run --rm -it \
@@ -36,7 +36,7 @@ docker run --rm -it \
   -v "$(pwd)/export:/app/export" \
   -v "$(pwd)/config.json:/app/config.json" \
   -e TERM=xterm-256color \
-  spotify-yt-dlp-downloader
+  harmoni
 ```
 
 ---
@@ -61,10 +61,10 @@ The following directories are mounted as volumes to persist data:
 docker compose build --no-cache
 
 # Run interactively
-docker compose run --rm spotify-yt-dlp-downloader
+docker compose run --rm harmoni
 
 # Open a shell in the container (debugging)
-docker compose run --rm --entrypoint /bin/sh spotify-yt-dlp-downloader
+docker compose run --rm --entrypoint /bin/sh harmoni
 ```
 
 ---

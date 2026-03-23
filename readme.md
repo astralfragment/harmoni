@@ -20,7 +20,12 @@ A Python tool for downloading music from Spotify and YouTube using **yt-dlp**. A
 
 ### Option 1: Standalone Executable (Easiest)
 
-Download `HARMONI.exe` from the [Releases](https://github.com/Ssenseii/spotify-yt-dlp-downloader/releases) page. No Python installation required.
+Download from the [Releases](https://github.com/Ssenseii/harmoni/releases) page:
+
+- **Windows**: `HARMONI.exe` — double-click to run
+- **macOS**: `HARMONI-macos-arm64.dmg` (Apple Silicon) — open the DMG and drag HARMONI to Applications
+
+No Python installation required. FFmpeg is bundled.
 
 See [Standalone Guide](docs/guides/standalone.md) for details.
 
@@ -28,8 +33,8 @@ See [Standalone Guide](docs/guides/standalone.md) for details.
 
 ```bash
 # Clone and install
-git clone https://github.com/Ssenseii/spotify-yt-dlp-downloader.git
-cd spotify-yt-dlp-downloader
+git clone https://github.com/Ssenseii/harmoni.git
+cd harmoni
 pip install -r requirements.txt
 
 # Run the GUI
@@ -43,8 +48,19 @@ python main.py
 
 ```bash
 docker compose build
-docker compose run --rm --service-ports spotify-yt-dlp-downloader
+docker compose run --rm --service-ports harmoni
 ```
+
+### Option 4: Build macOS from Source
+
+On any Mac with Python 3.12+ and Homebrew:
+
+```bash
+chmod +x build-macos.sh
+./build-macos.sh
+```
+
+This produces a `HARMONI-macos-<arch>.dmg` with ffmpeg bundled.
 
 ## Quick Start
 
@@ -52,7 +68,7 @@ docker compose run --rm --service-ports spotify-yt-dlp-downloader
 
 The easiest way to download your Spotify music:
 
-1. Launch `HARMONI.exe` or run `python gui_main.py`
+1. Launch HARMONI (exe, app, or `python gui_main.py`)
 2. Go to [exportify.net](https://exportify.net) and log in with Spotify
 3. Export your playlists as CSV files
 4. Drag and drop the CSV into HARMONI
@@ -81,7 +97,7 @@ See [CLI Guide](docs/guides/cli.md) for all available commands.
 
 ## Requirements
 
-- **Standalone EXE**: None (ffmpeg bundled)
+- **Standalone EXE/DMG**: None (ffmpeg bundled)
 - **Python version**: Python 3.9+ and ffmpeg
 
 ## Documentation
