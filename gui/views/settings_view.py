@@ -400,12 +400,10 @@ class SettingsView(QWidget):
 
     def _check_ytdlp_updates(self):
         """Start yt-dlp update check and installation."""
-        from gui.workers.ytdlp_updater import YtdlpUpdaterWorker
-
-        # Confirm update
         update_info = check_ytdlp_updates()
         current_version = update_info.get("current_version") if update_info else None
         has_update = update_info.get("update_available", False) if update_info else False
+        use_standalone = not current_version
 
         if current_version and has_update:
             latest_version = update_info.get("latest_version")
@@ -417,7 +415,7 @@ class SettingsView(QWidget):
         elif not current_version:
             message = (
                 "yt-dlp is not installed. Install it now?\n\n"
-                "This will download and install yt-dlp via pip.\n\n"
+                "This will download the standalone yt-dlp binary.\n\n"
                 "Continue?"
             )
         else:
@@ -437,17 +435,20 @@ class SettingsView(QWidget):
         if reply != QMessageBox.Yes:
             return
 
-        # Disable buttons during update
         self.ytdlp_update_btn.setEnabled(False)
         self.ytdlp_refresh_btn.setEnabled(False)
 
-        # Show progress
         self.ytdlp_progress.setVisible(True)
         self.ytdlp_progress_label.setVisible(True)
         self.ytdlp_progress.setValue(0)
 
-        # Create and start worker
-        self.ytdlp_worker = YtdlpUpdaterWorker()
+        if use_standalone:
+            from gui.workers.ytdlp_installer import YtdlpInstallerWorker
+            self.ytdlp_worker = YtdlpInstallerWorker()
+        else:
+            from gui.workers.ytdlp_updater import YtdlpUpdaterWorker
+            self.ytdlp_worker = YtdlpUpdaterWorker()
+
         self.ytdlp_worker.progress.connect(self._on_ytdlp_progress)
         self.ytdlp_worker.finished.connect(self._on_ytdlp_finished)
         self.ytdlp_worker.start()
