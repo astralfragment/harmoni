@@ -412,12 +412,12 @@ class SettingsView(QWidget):
         import subprocess
 
         version = None
-        found = False
+        found_path = None
 
-        # Check custom path from config first (instant, no subprocess)
+        # Check custom path from config first
         custom_path = self.config.get("ytdlp_path", "")
         if custom_path and os.path.isfile(custom_path):
-            found = True
+            found_path = custom_path
             try:
                 result = subprocess.run(
                     [custom_path, "--version"],
@@ -431,7 +431,7 @@ class SettingsView(QWidget):
             # Check PATH
             ytdlp_bin = shutil.which("yt-dlp")
             if ytdlp_bin:
-                found = True
+                found_path = ytdlp_bin
                 try:
                     result = subprocess.run(
                         [ytdlp_bin, "--version"],
@@ -442,16 +442,16 @@ class SettingsView(QWidget):
                 except Exception:
                     pass
 
-        if found and version:
+        if found_path and version:
             self.ytdlp_status_icon.setStyleSheet("color: #4caf50; font-size: 14px;")
-            self.ytdlp_status_label.setText(f"Installed: {version}")
+            self.ytdlp_status_label.setText(f"Installed: {version} ({found_path})")
             self.ytdlp_status_label.setStyleSheet("color: #4caf50;")
             self.ytdlp_update_btn.setText("Check for Updates")
             self.ytdlp_update_btn.setEnabled(True)
-        elif found:
-            self.ytdlp_status_icon.setStyleSheet("color: #ff9800; font-size: 14px;")
-            self.ytdlp_status_label.setText("Found but could not get version")
-            self.ytdlp_status_label.setStyleSheet("color: #ff9800;")
+        elif found_path:
+            self.ytdlp_status_icon.setStyleSheet("color: #4caf50; font-size: 14px;")
+            self.ytdlp_status_label.setText(f"Installed: {found_path}")
+            self.ytdlp_status_label.setStyleSheet("color: #4caf50;")
             self.ytdlp_update_btn.setText("Check for Updates")
             self.ytdlp_update_btn.setEnabled(True)
         else:
