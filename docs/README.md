@@ -55,6 +55,6 @@ Future features and improvements planned for HARMONI.
 
 ## Links
 
-- [GitHub Repository](https://github.com/Ssenseii/spotify-yt-dlp-downloader)
-- [Releases](https://github.com/Ssenseii/spotify-yt-dlp-downloader/releases)
-- [Issues](https://github.com/Ssenseii/spotify-yt-dlp-downloader/issues)
+- [GitHub Repository](https://github.com/Ssenseii/harmoni)
+- [Releases](https://github.com/Ssenseii/harmoni/releases)
+- [Issues](https://github.com/Ssenseii/harmoni/issues)

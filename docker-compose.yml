@@ -1,11 +1,11 @@
 version: "3.9"
 
 services:
-  spotify-yt-dlp-downloader:
+  harmoni:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: spotify-yt-dlp-downloader
+    container_name: harmoni
 
     # This is an interactive CLI app (questionary menus), so keep STDIN + TTY attached.
     stdin_open: true
