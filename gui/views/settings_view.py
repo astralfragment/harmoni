@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Signal
 
 from config import save_config, validate_config, DEFAULT_CONFIG, load_config
+from gui.styles import COLORS
 from utils.ffmpeg import check_ffmpeg_available
 from tools.ytdlp_update_checker import check_ytdlp_updates
 
@@ -50,109 +51,49 @@ class SettingsView(QWidget):
         title.setObjectName("title")
         layout.addWidget(title)
 
-        # FFmpeg Status Group - placed at top for visibility
-        ffmpeg_group = QGroupBox("FFmpeg Status")
-        ffmpeg_layout = QVBoxLayout(ffmpeg_group)
-        ffmpeg_layout.setSpacing(10)
+        # Dependencies Group
+        deps_group = QGroupBox("Dependencies")
+        deps_layout = QVBoxLayout(deps_group)
+        deps_layout.setSpacing(14)
 
-        # Status row
+        # --- FFmpeg section ---
+        ffmpeg_header = QLabel("FFmpeg")
+        ffmpeg_header.setObjectName("section")
+        deps_layout.addWidget(ffmpeg_header)
+
+        ffmpeg_desc = QLabel("Required for audio conversion.")
+        ffmpeg_desc.setObjectName("muted")
+        deps_layout.addWidget(ffmpeg_desc)
+
         status_row = QHBoxLayout()
         self.ffmpeg_status_icon = QLabel("●")
         self.ffmpeg_status_icon.setFixedWidth(20)
         status_row.addWidget(self.ffmpeg_status_icon)
-
         self.ffmpeg_status_label = QLabel("Checking...")
         status_row.addWidget(self.ffmpeg_status_label, 1)
-
         self.ffmpeg_install_btn = QPushButton("Install FFmpeg")
         self.ffmpeg_install_btn.setObjectName("secondary")
         self.ffmpeg_install_btn.clicked.connect(self._install_ffmpeg)
         status_row.addWidget(self.ffmpeg_install_btn)
-
         self.ffmpeg_refresh_btn = QPushButton("Refresh")
         self.ffmpeg_refresh_btn.setObjectName("secondary")
         self.ffmpeg_refresh_btn.setFixedWidth(70)
         self.ffmpeg_refresh_btn.clicked.connect(self._check_ffmpeg_status)
         status_row.addWidget(self.ffmpeg_refresh_btn)
+        deps_layout.addLayout(status_row)
 
-        ffmpeg_layout.addLayout(status_row)
-
-        # Progress bar (hidden by default)
         self.ffmpeg_progress = QProgressBar()
         self.ffmpeg_progress.setVisible(False)
-        ffmpeg_layout.addWidget(self.ffmpeg_progress)
-
+        deps_layout.addWidget(self.ffmpeg_progress)
         self.ffmpeg_progress_label = QLabel("")
         self.ffmpeg_progress_label.setObjectName("subtitle")
         self.ffmpeg_progress_label.setVisible(False)
-        ffmpeg_layout.addWidget(self.ffmpeg_progress_label)
+        deps_layout.addWidget(self.ffmpeg_progress_label)
 
-        # Help text
-        ffmpeg_help = QLabel(
-            "FFmpeg is required for audio conversion. "
-            "Click 'Install FFmpeg' to automatically download and install it."
-        )
-        ffmpeg_help.setObjectName("subtitle")
-        ffmpeg_help.setWordWrap(True)
-        ffmpeg_layout.addWidget(ffmpeg_help)
-
-        layout.addWidget(ffmpeg_group)
-
-        # yt-dlp Status Group
-        ytdlp_group = QGroupBox("yt-dlp Status")
-        ytdlp_layout = QVBoxLayout(ytdlp_group)
-        ytdlp_layout.setSpacing(10)
-
-        # Status row
-        ytdlp_status_row = QHBoxLayout()
-        self.ytdlp_status_icon = QLabel("●")
-        self.ytdlp_status_icon.setFixedWidth(20)
-        ytdlp_status_row.addWidget(self.ytdlp_status_icon)
-
-        self.ytdlp_status_label = QLabel("Checking...")
-        ytdlp_status_row.addWidget(self.ytdlp_status_label, 1)
-
-        self.ytdlp_update_btn = QPushButton("Check for Updates")
-        self.ytdlp_update_btn.setObjectName("secondary")
-        self.ytdlp_update_btn.clicked.connect(self._check_ytdlp_updates)
-        ytdlp_status_row.addWidget(self.ytdlp_update_btn)
-
-        self.ytdlp_refresh_btn = QPushButton("Refresh")
-        self.ytdlp_refresh_btn.setObjectName("secondary")
-        self.ytdlp_refresh_btn.setFixedWidth(70)
-        self.ytdlp_refresh_btn.clicked.connect(self._check_ytdlp_status)
-        ytdlp_status_row.addWidget(self.ytdlp_refresh_btn)
-
-        ytdlp_layout.addLayout(ytdlp_status_row)
-
-        # Progress bar (hidden by default)
-        self.ytdlp_progress = QProgressBar()
-        self.ytdlp_progress.setVisible(False)
-        ytdlp_layout.addWidget(self.ytdlp_progress)
-
-        self.ytdlp_progress_label = QLabel("")
-        self.ytdlp_progress_label.setObjectName("subtitle")
-        self.ytdlp_progress_label.setVisible(False)
-        ytdlp_layout.addWidget(self.ytdlp_progress_label)
-
-        # Help text
-        ytdlp_help = QLabel(
-            "yt-dlp is required for downloading videos from various sources. "
-            "Click 'Check for Updates' to update to the latest version."
-        )
-        ytdlp_help.setObjectName("subtitle")
-        ytdlp_help.setWordWrap(True)
-        ytdlp_layout.addWidget(ytdlp_help)
-
-        layout.addWidget(ytdlp_group)
-
-        # Binary Paths Group
-        paths_group = QGroupBox("Binary Paths")
-        paths_layout = QVBoxLayout(paths_group)
-        paths_layout.setSpacing(10)
-
-        # FFmpeg path
-        paths_layout.addWidget(QLabel("FFmpeg"))
+        # FFmpeg custom path
+        ffmpeg_path_label = QLabel("Custom path")
+        ffmpeg_path_label.setObjectName("muted")
+        deps_layout.addWidget(ffmpeg_path_label)
         ffmpeg_path_row = QHBoxLayout()
         self.ffmpeg_path_input = QLineEdit()
         self.ffmpeg_path_input.setPlaceholderText("Auto-detect (leave empty)")
@@ -162,10 +103,53 @@ class SettingsView(QWidget):
         ffmpeg_browse_btn.setFixedWidth(70)
         ffmpeg_browse_btn.clicked.connect(self._browse_ffmpeg_path)
         ffmpeg_path_row.addWidget(ffmpeg_browse_btn)
-        paths_layout.addLayout(ffmpeg_path_row)
+        deps_layout.addLayout(ffmpeg_path_row)
 
-        # yt-dlp path
-        paths_layout.addWidget(QLabel("yt-dlp"))
+        # --- Separator ---
+        sep = QFrame()
+        sep.setFrameShape(QFrame.HLine)
+        sep.setStyleSheet(f"color: {COLORS['border']};")
+        sep.setFixedHeight(1)
+        deps_layout.addWidget(sep)
+
+        # --- yt-dlp section ---
+        ytdlp_header = QLabel("yt-dlp")
+        ytdlp_header.setObjectName("section")
+        deps_layout.addWidget(ytdlp_header)
+
+        ytdlp_desc = QLabel("Required for downloading from YouTube and other sources.")
+        ytdlp_desc.setObjectName("muted")
+        deps_layout.addWidget(ytdlp_desc)
+
+        ytdlp_status_row = QHBoxLayout()
+        self.ytdlp_status_icon = QLabel("●")
+        self.ytdlp_status_icon.setFixedWidth(20)
+        ytdlp_status_row.addWidget(self.ytdlp_status_icon)
+        self.ytdlp_status_label = QLabel("Checking...")
+        ytdlp_status_row.addWidget(self.ytdlp_status_label, 1)
+        self.ytdlp_update_btn = QPushButton("Check for Updates")
+        self.ytdlp_update_btn.setObjectName("secondary")
+        self.ytdlp_update_btn.clicked.connect(self._check_ytdlp_updates)
+        ytdlp_status_row.addWidget(self.ytdlp_update_btn)
+        self.ytdlp_refresh_btn = QPushButton("Refresh")
+        self.ytdlp_refresh_btn.setObjectName("secondary")
+        self.ytdlp_refresh_btn.setFixedWidth(70)
+        self.ytdlp_refresh_btn.clicked.connect(self._check_ytdlp_status)
+        ytdlp_status_row.addWidget(self.ytdlp_refresh_btn)
+        deps_layout.addLayout(ytdlp_status_row)
+
+        self.ytdlp_progress = QProgressBar()
+        self.ytdlp_progress.setVisible(False)
+        deps_layout.addWidget(self.ytdlp_progress)
+        self.ytdlp_progress_label = QLabel("")
+        self.ytdlp_progress_label.setObjectName("subtitle")
+        self.ytdlp_progress_label.setVisible(False)
+        deps_layout.addWidget(self.ytdlp_progress_label)
+
+        # yt-dlp custom path
+        ytdlp_path_label = QLabel("Custom path")
+        ytdlp_path_label.setObjectName("muted")
+        deps_layout.addWidget(ytdlp_path_label)
         ytdlp_path_row = QHBoxLayout()
         self.ytdlp_path_input = QLineEdit()
         self.ytdlp_path_input.setPlaceholderText("Auto-detect (leave empty)")
@@ -175,16 +159,9 @@ class SettingsView(QWidget):
         ytdlp_browse_btn.setFixedWidth(70)
         ytdlp_browse_btn.clicked.connect(self._browse_ytdlp_path)
         ytdlp_path_row.addWidget(ytdlp_browse_btn)
-        paths_layout.addLayout(ytdlp_path_row)
+        deps_layout.addLayout(ytdlp_path_row)
 
-        paths_help = QLabel(
-            "Set custom paths if auto-detection fails. Leave empty to use bundled or system binaries."
-        )
-        paths_help.setObjectName("subtitle")
-        paths_help.setWordWrap(True)
-        paths_layout.addWidget(paths_help)
-
-        layout.addWidget(paths_group)
+        layout.addWidget(deps_group)
 
         # Output Settings Group
         output_group = QGroupBox("Output Settings")
