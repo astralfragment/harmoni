@@ -463,19 +463,13 @@ class SettingsView(QWidget):
 
     def _check_ytdlp_updates(self):
         """Start yt-dlp update check and installation."""
-        update_info = check_ytdlp_updates()
-        current_version = update_info.get("current_version") if update_info else None
-        has_update = update_info.get("update_available", False) if update_info else False
-        use_standalone = not current_version
+        import shutil
 
-        if current_version and has_update:
-            latest_version = update_info.get("latest_version")
-            message = (
-                f"Update yt-dlp from {current_version} to {latest_version}?\n\n"
-                "This will download and install the latest version.\n\n"
-                "Continue?"
-            )
-        elif not current_version:
+        # Fast local check only — no network call
+        ytdlp_bin = self.config.get("ytdlp_path", "") or shutil.which("yt-dlp")
+        use_standalone = not (ytdlp_bin and os.path.isfile(ytdlp_bin))
+
+        if use_standalone:
             message = (
                 "yt-dlp is not installed. Install it now?\n\n"
                 "This will download the standalone yt-dlp binary.\n\n"
@@ -483,8 +477,8 @@ class SettingsView(QWidget):
             )
         else:
             message = (
-                f"yt-dlp is already up to date ({current_version}).\n\n"
-                "Check for updates anyway?"
+                "Download and install the latest yt-dlp?\n\n"
+                "Continue?"
             )
 
         reply = QMessageBox.question(

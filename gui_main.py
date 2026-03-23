@@ -100,10 +100,16 @@ def configure_bundled_binaries():
         if os.path.isdir(candidate):
             paths_to_add.append(candidate)
 
-    # Fallback: check for a local bin/ next to the script/executable
+    # Check for a local bin/ next to the script/executable
     app_bin = os.path.join(get_app_dir(), 'bin')
     if os.path.isdir(app_bin) and app_bin not in paths_to_add:
         paths_to_add.append(app_bin)
+
+    # macOS: also check user-writable location where the installer puts binaries
+    if sys.platform == 'darwin':
+        user_bin = os.path.join(os.path.expanduser("~/Library/Application Support/HARMONI"), "bin")
+        if os.path.isdir(user_bin) and user_bin not in paths_to_add:
+            paths_to_add.append(user_bin)
 
     # Ensure binaries are executable and add to PATH
     for bin_dir in paths_to_add:

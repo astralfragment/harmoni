@@ -30,8 +30,13 @@ class YtdlpInstallerWorker(QThread):
         self._cancelled = False
 
         if install_dir is None:
-            if getattr(sys, 'frozen', False):
-                # Frozen app: install next to the executable
+            if getattr(sys, 'frozen', False) and sys.platform == "darwin":
+                # macOS .app bundle: use user-writable location
+                self.install_dir = os.path.join(
+                    os.path.expanduser("~/Library/Application Support/HARMONI"), "bin"
+                )
+            elif getattr(sys, 'frozen', False):
+                # Windows/Linux frozen: install next to the executable
                 self.install_dir = os.path.join(os.path.dirname(sys.executable), "bin")
             else:
                 # Dev mode: install in project_root/bin
