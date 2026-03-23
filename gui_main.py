@@ -71,6 +71,15 @@ def create_default_config():
             print(f"Created default config.json")
 
 
+def configure_bundled_binaries():
+    """Add bundled bin/ directory to PATH so ffmpeg and yt-dlp are found."""
+    from utils.ffmpeg import configure_ffmpeg_path
+    try:
+        configure_ffmpeg_path()
+    except FileNotFoundError:
+        pass  # ffmpeg not bundled, will be handled later
+
+
 def check_ffmpeg():
     """Check if FFmpeg is available."""
     from utils.ffmpeg import check_ffmpeg_available
@@ -98,6 +107,9 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         except Exception:
             pass
+
+    # Set up bundled binaries (ffmpeg, yt-dlp) before anything checks for them
+    configure_bundled_binaries()
 
     # Check dependencies first
     check_dependencies()
