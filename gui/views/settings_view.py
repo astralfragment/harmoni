@@ -165,44 +165,51 @@ class SettingsView(QWidget):
 
         # Output Settings Group
         output_group = QGroupBox("Output Settings")
-        output_layout = QFormLayout(output_group)
-        output_layout.setSpacing(12)
+        output_layout = QVBoxLayout(output_group)
+        output_layout.setSpacing(10)
 
-        # Output directory
-        output_dir_layout = QHBoxLayout()
+        output_dir_label = QLabel("Output directory")
+        output_dir_label.setObjectName("muted")
+        output_layout.addWidget(output_dir_label)
+        output_dir_row = QHBoxLayout()
         self.output_dir_input = QLineEdit()
         self.output_dir_input.setPlaceholderText("Select output directory...")
-        output_dir_layout.addWidget(self.output_dir_input)
+        output_dir_row.addWidget(self.output_dir_input, 1)
         browse_btn = QPushButton("Browse")
         browse_btn.setObjectName("secondary")
         browse_btn.setFixedWidth(70)
         browse_btn.clicked.connect(self._browse_output_dir)
-        output_dir_layout.addWidget(browse_btn)
-        output_layout.addRow("Output Directory:", output_dir_layout)
+        output_dir_row.addWidget(browse_btn)
+        output_layout.addLayout(output_dir_row)
 
-        # Audio format
+        format_label = QLabel("Audio format")
+        format_label.setObjectName("muted")
+        output_layout.addWidget(format_label)
         self.format_combo = QComboBox()
         self.format_combo.addItems(["mp3", "flac", "wav", "aac", "ogg", "m4a"])
-        output_layout.addRow("Audio Format:", self.format_combo)
+        output_layout.addWidget(self.format_combo)
 
         layout.addWidget(output_group)
 
         # Spotify Settings Group
         spotify_group = QGroupBox("Spotify Settings")
-        spotify_layout = QFormLayout(spotify_group)
-        spotify_layout.setSpacing(12)
+        spotify_layout = QVBoxLayout(spotify_group)
+        spotify_layout.setSpacing(10)
 
-        # Client ID
+        client_id_label = QLabel("Client ID")
+        client_id_label.setObjectName("muted")
+        spotify_layout.addWidget(client_id_label)
         self.client_id_input = QLineEdit()
         self.client_id_input.setPlaceholderText("Enter your Spotify Client ID")
-        spotify_layout.addRow("Client ID:", self.client_id_input)
+        spotify_layout.addWidget(self.client_id_input)
 
-        # Redirect URI (read-only)
+        redirect_label = QLabel("Redirect URI")
+        redirect_label.setObjectName("muted")
+        spotify_layout.addWidget(redirect_label)
         self.redirect_uri_input = QLineEdit()
         self.redirect_uri_input.setReadOnly(True)
-        spotify_layout.addRow("Redirect URI:", self.redirect_uri_input)
+        spotify_layout.addWidget(self.redirect_uri_input)
 
-        # Help text
         help_label = QLabel(
             "To get a Spotify Client ID:\n"
             "1. Go to developer.spotify.com/dashboard\n"
@@ -212,63 +219,68 @@ class SettingsView(QWidget):
         )
         help_label.setObjectName("subtitle")
         help_label.setWordWrap(True)
-        spotify_layout.addRow("", help_label)
+        spotify_layout.addWidget(help_label)
 
         layout.addWidget(spotify_group)
 
         # Download Settings Group
         download_group = QGroupBox("Download Settings")
-        download_layout = QFormLayout(download_group)
-        download_layout.setSpacing(12)
+        download_layout = QVBoxLayout(download_group)
+        download_layout.setSpacing(10)
 
-        # Sleep between downloads
+        sleep_label = QLabel("Sleep between downloads (seconds)")
+        sleep_label.setObjectName("muted")
+        download_layout.addWidget(sleep_label)
         self.sleep_input = QLineEdit()
         self.sleep_input.setPlaceholderText("5")
-        self.sleep_input.setFixedWidth(80)
-        download_layout.addRow("Sleep Between (sec):", self.sleep_input)
+        self.sleep_input.setMaximumWidth(200)
+        download_layout.addWidget(self.sleep_input)
 
-        # Retry attempts
+        retry_label = QLabel("Retry attempts")
+        retry_label.setObjectName("muted")
+        download_layout.addWidget(retry_label)
         self.retry_input = QLineEdit()
         self.retry_input.setPlaceholderText("3")
-        self.retry_input.setFixedWidth(80)
-        download_layout.addRow("Retry Attempts:", self.retry_input)
+        self.retry_input.setMaximumWidth(200)
+        download_layout.addWidget(self.retry_input)
 
         layout.addWidget(download_group)
 
         # Metadata Settings Group
         metadata_group = QGroupBox("Metadata Settings")
-        metadata_layout = QFormLayout(metadata_group)
-        metadata_layout.setSpacing(12)
+        metadata_layout = QVBoxLayout(metadata_group)
+        metadata_layout.setSpacing(10)
 
-        # Enable metadata
         self.metadata_check = QCheckBox("Enable metadata embedding")
-        metadata_layout.addRow("", self.metadata_check)
+        metadata_layout.addWidget(self.metadata_check)
 
-        # Metadata template
+        template_label = QLabel("Template")
+        template_label.setObjectName("muted")
+        metadata_layout.addWidget(template_label)
         self.template_combo = QComboBox()
         self.template_combo.addItems(["basic", "comprehensive", "dj-mix"])
-        metadata_layout.addRow("Template:", self.template_combo)
+        metadata_layout.addWidget(self.template_combo)
 
-        # MusicBrainz lookup
         self.musicbrainz_check = QCheckBox("Enable MusicBrainz lookup")
-        metadata_layout.addRow("", self.musicbrainz_check)
+        metadata_layout.addWidget(self.musicbrainz_check)
 
         layout.addWidget(metadata_group)
 
         # Backup Settings Group
         backup_group = QGroupBox("Backup Settings")
-        backup_layout = QFormLayout(backup_group)
-        backup_layout.setSpacing(12)
+        backup_layout = QVBoxLayout(backup_group)
+        backup_layout.setSpacing(10)
 
-        # Auto backup
         self.backup_check = QCheckBox("Enable automatic backups")
-        backup_layout.addRow("", self.backup_check)
+        backup_layout.addWidget(self.backup_check)
 
-        # Max backups
+        max_backups_label = QLabel("Max backups")
+        max_backups_label.setObjectName("muted")
+        backup_layout.addWidget(max_backups_label)
         self.max_backups_input = QLineEdit()
         self.max_backups_input.setPlaceholderText("10")
-        self.max_backups_input.setFixedWidth(80)
-        backup_layout.addRow("Max Backups:", self.max_backups_input)
+        self.max_backups_input.setMaximumWidth(200)
+        backup_layout.addWidget(self.max_backups_input)
 
         layout.addWidget(backup_group)
 
