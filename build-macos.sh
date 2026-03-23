@@ -42,7 +42,7 @@ cp "$(which ffprobe)" bin/ffprobe
 
 # Download standalone yt-dlp binary (Homebrew version is a Python wrapper that won't work bundled)
 echo "=== Downloading standalone yt-dlp ==="
-curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
+curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
 chmod +x bin/yt-dlp
 
 # Convert icon to icns
@@ -65,7 +65,7 @@ echo "=== Building with PyInstaller ==="
 pyinstaller \
     --name "HARMONI" \
     --windowed \
-    --onefile \
+    --onedir \
     --icon HARMONI.icns \
     --add-data "gui/resources/icons:gui/resources/icons" \
     --add-binary "bin/ffmpeg:bin" \
@@ -93,7 +93,7 @@ DMG_NAME="HARMONI-macos-${ARCH}.dmg"
 hdiutil create -volname "HARMONI" -srcfolder dmg_contents -ov -format UDZO "$DMG_NAME"
 
 # Cleanup build artifacts
-rm -rf build icon.iconset dmg_contents HARMONI.icns HARMONI.spec bin
+rm -rf build icon.iconset dmg_contents HARMONI.icns bin
 
 echo ""
 echo "=== Build complete ==="

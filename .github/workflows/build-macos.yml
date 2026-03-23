@@ -31,7 +31,7 @@ jobs:
           cp "$(which ffprobe)" bin/ffprobe
 
           # Download standalone yt-dlp binary (not the Homebrew Python wrapper)
-          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
+          curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
           chmod +x bin/yt-dlp
 
       - name: Convert icon to icns
@@ -54,7 +54,7 @@ jobs:
           pyinstaller \
             --name "HARMONI" \
             --windowed \
-            --onefile \
+            --onedir \
             --icon HARMONI.icns \
             --add-data "gui/resources/icons:gui/resources/icons" \
             --add-binary "bin/ffmpeg:bin" \

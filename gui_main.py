@@ -73,11 +73,38 @@ def create_default_config():
 
 def configure_bundled_binaries():
     """Add bundled bin/ directory to PATH so ffmpeg and yt-dlp are found."""
-    from utils.ffmpeg import configure_ffmpeg_path
-    try:
-        configure_ffmpeg_path()
-    except FileNotFoundError:
-        pass  # ffmpeg not bundled, will be handled later
+    import sys
+    import stat
+
+    bin_dir = None
+
+    # Check for bundled bin/ in PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        candidate = os.path.join(sys._MEIPASS, 'bin')
+        if os.path.isdir(candidate):
+            bin_dir = candidate
+
+    # Fallback: check for a local bin/ next to the script/executable
+    if not bin_dir:
+        candidate = os.path.join(get_app_dir(), 'bin')
+        if os.path.isdir(candidate):
+            bin_dir = candidate
+
+    if not bin_dir:
+        return
+
+    # Ensure all binaries in bin/ are executable (PyInstaller may strip permissions)
+    for name in os.listdir(bin_dir):
+        fpath = os.path.join(bin_dir, name)
+        if os.path.isfile(fpath):
+            try:
+                st = os.stat(fpath)
+                if not (st.st_mode & stat.S_IEXEC):
+                    os.chmod(fpath, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+            except OSError:
+                pass  # read-only bundle (e.g. /Applications), skip
+
+    os.environ['PATH'] = bin_dir + os.pathsep + os.environ.get('PATH', '')
 
 
 def check_ffmpeg():
