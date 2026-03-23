@@ -23,12 +23,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Install FFmpeg
+      - name: Install FFmpeg and yt-dlp binaries
         run: |
-          brew install ffmpeg
+          brew install ffmpeg yt-dlp
           mkdir -p bin
           cp "$(which ffmpeg)" bin/ffmpeg
           cp "$(which ffprobe)" bin/ffprobe
+          cp "$(which yt-dlp)" bin/yt-dlp
 
       - name: Convert icon to icns
         run: |
@@ -55,6 +56,7 @@ jobs:
             --add-data "gui/resources/icons:gui/resources/icons" \
             --add-binary "bin/ffmpeg:bin" \
             --add-binary "bin/ffprobe:bin" \
+            --add-binary "bin/yt-dlp:bin" \
             --add-data "config.json.example:." \
             --add-data "data:data" \
             --strip \

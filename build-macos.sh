@@ -23,21 +23,28 @@ echo "=== Installing Python dependencies ==="
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 
-# Install ffmpeg if not present
+# Install ffmpeg and yt-dlp if not present
+if ! command -v brew &>/dev/null; then
+    echo "Error: Homebrew not found. Install from https://brew.sh"
+    exit 1
+fi
+
 if ! command -v ffmpeg &>/dev/null; then
     echo "=== Installing FFmpeg via Homebrew ==="
-    if ! command -v brew &>/dev/null; then
-        echo "Error: Homebrew not found. Install from https://brew.sh"
-        exit 1
-    fi
     brew install ffmpeg
 fi
 
-# Copy ffmpeg binaries for bundling
-echo "=== Bundling FFmpeg ==="
+if ! command -v yt-dlp &>/dev/null; then
+    echo "=== Installing yt-dlp via Homebrew ==="
+    brew install yt-dlp
+fi
+
+# Copy binaries for bundling
+echo "=== Bundling binaries ==="
 mkdir -p bin
 cp "$(which ffmpeg)" bin/ffmpeg
 cp "$(which ffprobe)" bin/ffprobe
+cp "$(which yt-dlp)" bin/yt-dlp
 
 # Convert icon to icns
 echo "=== Converting icon ==="
@@ -64,6 +71,7 @@ pyinstaller \
     --add-data "gui/resources/icons:gui/resources/icons" \
     --add-binary "bin/ffmpeg:bin" \
     --add-binary "bin/ffprobe:bin" \
+    --add-binary "bin/yt-dlp:bin" \
     --add-data "config.json.example:." \
     --add-data "data:data" \
     --strip \
