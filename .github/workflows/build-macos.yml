@@ -25,11 +25,14 @@ jobs:
 
       - name: Install FFmpeg and yt-dlp binaries
         run: |
-          brew install ffmpeg yt-dlp
+          brew install ffmpeg
           mkdir -p bin
           cp "$(which ffmpeg)" bin/ffmpeg
           cp "$(which ffprobe)" bin/ffprobe
-          cp "$(which yt-dlp)" bin/yt-dlp
+
+          # Download standalone yt-dlp binary (not the Homebrew Python wrapper)
+          curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
+          chmod +x bin/yt-dlp
 
       - name: Convert icon to icns
         run: |
