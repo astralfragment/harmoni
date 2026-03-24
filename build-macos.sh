@@ -23,7 +23,7 @@ echo "=== Installing Python dependencies ==="
 python3 -m pip install --upgrade pip
 python3 -m pip install -r requirements.txt
 
-# Install ffmpeg and yt-dlp if not present
+# Install ffmpeg if not present
 if ! command -v brew &>/dev/null; then
     echo "Error: Homebrew not found. Install from https://brew.sh"
     exit 1
@@ -34,17 +34,16 @@ if ! command -v ffmpeg &>/dev/null; then
     brew install ffmpeg
 fi
 
-if ! command -v yt-dlp &>/dev/null; then
-    echo "=== Installing yt-dlp via Homebrew ==="
-    brew install yt-dlp
-fi
-
 # Copy binaries for bundling
 echo "=== Bundling binaries ==="
 mkdir -p bin
 cp "$(which ffmpeg)" bin/ffmpeg
 cp "$(which ffprobe)" bin/ffprobe
-cp "$(which yt-dlp)" bin/yt-dlp
+
+# Download standalone yt-dlp binary (Homebrew version is a Python wrapper that won't work bundled)
+echo "=== Downloading standalone yt-dlp ==="
+curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
+chmod +x bin/yt-dlp
 
 # Convert icon to icns
 echo "=== Converting icon ==="
@@ -66,7 +65,7 @@ echo "=== Building with PyInstaller ==="
 pyinstaller \
     --name "HARMONI" \
     --windowed \
-    --onefile \
+    --onedir \
     --icon HARMONI.icns \
     --add-data "gui/resources/icons:gui/resources/icons" \
     --add-binary "bin/ffmpeg:bin" \
@@ -94,7 +93,7 @@ DMG_NAME="HARMONI-macos-${ARCH}.dmg"
 hdiutil create -volname "HARMONI" -srcfolder dmg_contents -ov -format UDZO "$DMG_NAME"
 
 # Cleanup build artifacts
-rm -rf build icon.iconset dmg_contents HARMONI.icns HARMONI.spec bin
+rm -rf build icon.iconset dmg_contents HARMONI.icns bin
 
 echo ""
 echo "=== Build complete ==="

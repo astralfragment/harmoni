@@ -433,7 +433,7 @@ QGroupBox {{
     background-color: {COLORS["background_card"]};
     border: 1px solid {COLORS["border"]};
     border-radius: 12px;
-    margin-top: 8px;
+    margin-top: 14px;
     padding: 20px;
     padding-top: 36px;
     font-weight: 600;
@@ -441,9 +441,10 @@ QGroupBox {{
 
 QGroupBox::title {{
     subcontrol-origin: margin;
-    left: 16px;
-    top: 8px;
-    padding: 0 8px;
+    subcontrol-position: top left;
+    left: 20px;
+    top: 10px;
+    padding: 0 6px;
     color: {COLORS["text_secondary"]};
     font-size: 12px;
     font-weight: 600;
