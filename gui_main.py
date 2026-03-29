@@ -71,6 +71,63 @@ def create_default_config():
             print(f"Created default config.json")
 
 
+def configure_bundled_binaries():
+    """Add bundled/custom bin directories to PATH so ffmpeg and yt-dlp are found."""
+    import sys
+    import stat
+
+    paths_to_add = []
+
+    # Check config for custom paths first
+    try:
+        config_path = os.path.join(get_app_dir(), "config.json")
+        if os.path.exists(config_path):
+            import json
+            with open(config_path, "r") as f:
+                cfg = json.load(f)
+            for key in ("ffmpeg_path", "ytdlp_path"):
+                custom = cfg.get(key, "")
+                if custom and os.path.isfile(custom):
+                    custom_dir = os.path.dirname(custom)
+                    if custom_dir not in paths_to_add:
+                        paths_to_add.append(custom_dir)
+    except Exception:
+        pass
+
+    # Check for bundled bin/ in PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        candidate = os.path.join(sys._MEIPASS, 'bin')
+        if os.path.isdir(candidate):
+            paths_to_add.append(candidate)
+
+    # Check for a local bin/ next to the script/executable
+    app_bin = os.path.join(get_app_dir(), 'bin')
+    if os.path.isdir(app_bin) and app_bin not in paths_to_add:
+        paths_to_add.append(app_bin)
+
+    # macOS: also check user-writable location where the installer puts binaries
+    if sys.platform == 'darwin':
+        user_bin = os.path.join(os.path.expanduser("~/Library/Application Support/HARMONI"), "bin")
+        if os.path.isdir(user_bin) and user_bin not in paths_to_add:
+            paths_to_add.append(user_bin)
+
+    # Ensure binaries are executable and add to PATH
+    for bin_dir in paths_to_add:
+        for name in os.listdir(bin_dir):
+            fpath = os.path.join(bin_dir, name)
+            if os.path.isfile(fpath):
+                try:
+                    st = os.stat(fpath)
+                    if not (st.st_mode & stat.S_IEXEC):
+                        os.chmod(fpath, st.st_mode | stat.S_IEXEC | stat.S_IXGRP | stat.S_IXOTH)
+                except OSError:
+                    pass
+
+    if paths_to_add:
+        current = os.environ.get('PATH', '')
+        os.environ['PATH'] = os.pathsep.join(paths_to_add) + os.pathsep + current
+
+
 def check_ffmpeg():
     """Check if FFmpeg is available."""
     from utils.ffmpeg import check_ffmpeg_available
@@ -98,6 +155,9 @@ def main():
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(app_id)
         except Exception:
             pass
+
+    # Set up bundled binaries (ffmpeg, yt-dlp) before anything checks for them
+    configure_bundled_binaries()
 
     # Check dependencies first
     check_dependencies()

@@ -6,9 +6,10 @@ HARMONI is available as a standalone executable that requires no Python installa
 
 ### From GitHub Releases
 
-1. Go to the [Releases page](https://github.com/Ssenseii/spotify-yt-dlp-downloader/releases)
-2. Download the latest `HARMONI.exe` (Windows) or `HARMONI` (Linux/macOS)
-3. Run the executable - no installation required
+1. Go to the [Releases page](https://github.com/Ssenseii/harmoni/releases)
+2. Download the version for your platform:
+   - **Windows**: `HARMONI.exe`
+   - **macOS (Apple Silicon)**: `HARMONI-macos-arm64.dmg`
 
 ---
 
@@ -22,9 +23,38 @@ Double-click `HARMONI.exe` or run from command prompt:
 HARMONI.exe
 ```
 
-### Linux/macOS
+### macOS
+
+#### Installing from DMG
+
+1. Open `HARMONI-macos-arm64.dmg`
+2. Drag **HARMONI** into your **Applications** folder
+3. Eject the DMG
+
+#### macOS Security (Gatekeeper)
+
+Since HARMONI is not signed with an Apple Developer certificate, macOS will block it on first launch:
+
+> "HARMONI" can't be opened because Apple cannot check it for malicious software.
+
+**To allow it:**
+
+1. Open **System Settings > Privacy & Security**
+2. Scroll down — you'll see a message about HARMONI being blocked
+3. Click **"Open Anyway"**
+4. Confirm when prompted
+
+Alternatively, right-click (or Control-click) the app and select **Open** from the context menu. This bypasses Gatekeeper for that specific app.
+
+You only need to do this once. After that, HARMONI will open normally.
+
+#### Running from Terminal
 
 ```bash
+# If installed to Applications
+open /Applications/HARMONI.app
+
+# If running from another location
 chmod +x HARMONI  # Make executable (first time only)
 ./HARMONI
 ```
@@ -41,11 +71,9 @@ On first launch, HARMONI will:
 
 ### FFmpeg
 
-FFmpeg is required for audio conversion. The GUI will detect if FFmpeg is missing and offer to download it automatically.
+FFmpeg is bundled with the standalone releases. If for some reason it's missing:
 
-**Manual installation:**
-
-- **Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html) and add to PATH
+- **Windows**: The GUI will detect and offer to download it automatically
 - **macOS**: `brew install ffmpeg`
 - **Linux**: `sudo apt install ffmpeg` (Debian/Ubuntu)
 
@@ -55,6 +83,8 @@ FFmpeg is required for audio conversion. The GUI will detect if FFmpeg is missin
 
 When running as a standalone executable, files are stored relative to the executable:
 
+### Windows
+
 ```
 HARMONI.exe
 ├── config.json          # Configuration (created on first run)
@@ -63,6 +93,20 @@ HARMONI.exe
 │   ├── tracks.json
 │   └── playlists.json
 └── music/               # Downloaded music output
+```
+
+### macOS
+
+When installed to Applications, HARMONI stores its data in your home directory:
+
+```
+~/Library/Application Support/HARMONI/
+├── config.json
+├── data/
+│   ├── exportify/
+│   ├── tracks.json
+│   └── playlists.json
+└── music/
 ```
 
 ---
@@ -90,7 +134,7 @@ See [Configuration Reference](configuration.md) for all options.
 
 The executable is fully portable:
 
-1. Copy `HARMONI.exe` and `config.json` to any folder
+1. Copy the executable and `config.json` to any folder
 2. Create `data/exportify/` subfolder for CSV imports
 3. Run from anywhere
 
@@ -100,26 +144,36 @@ Music will download to the `music/` folder relative to the executable.
 
 ## Building from Source
 
-To build your own executable:
-
-### Prerequisites
+### Windows
 
 ```bash
-pip install pyinstaller
 pip install -r requirements.txt
-```
-
-### Build Command
-
-```bash
 pyinstaller HARMONI.spec
 ```
 
 The executable will be created in the `dist/` folder.
 
+### macOS
+
+Use the build script (requires Python 3.12+ and Homebrew):
+
+```bash
+chmod +x build-macos.sh
+./build-macos.sh
+```
+
+This will:
+- Install Python dependencies
+- Install and bundle ffmpeg via Homebrew
+- Convert the app icon to `.icns`
+- Build with PyInstaller
+- Create a `.dmg` file
+
+Output: `HARMONI-macos-<arch>.dmg`
+
 ### Build Options
 
-The `HARMONI.spec` file configures:
+The `HARMONI.spec` file (Windows) configures:
 
 - **Entry point**: `gui_main.py` (GUI version)
 - **Bundled files**: `config.json.example`, icon resources
@@ -147,7 +201,25 @@ Windows SmartScreen may block unsigned executables:
 
 This warning appears because the executable is not code-signed.
 
-### Missing DLL errors
+### macOS: "HARMONI is damaged and can't be opened"
+
+This can happen if the quarantine attribute is set. Remove it:
+
+```bash
+xattr -cr /Applications/HARMONI.app
+```
+
+Then try opening again.
+
+### macOS: App won't open at all
+
+Try launching from Terminal to see error output:
+
+```bash
+/Applications/HARMONI.app/Contents/MacOS/HARMONI
+```
+
+### Missing DLL errors (Windows)
 
 Ensure you have the [Visual C++ Redistributable](https://aka.ms/vs/17/release/vc_redist.x64.exe) installed.
 
@@ -162,10 +234,7 @@ The GUI will show FFmpeg status in Settings:
 ### Application crashes on startup
 
 1. Delete `config.json` to reset to defaults
-2. Run from command prompt to see error messages:
-   ```cmd
-   HARMONI.exe
-   ```
+2. Run from command prompt/terminal to see error messages
 
 ### Antivirus false positives
 
@@ -194,8 +263,8 @@ The standalone executable has some limitations compared to the Python version:
 
 To update the standalone version:
 
-1. Download the latest release from GitHub
-2. Replace the old executable
+1. Download the latest release from [GitHub](https://github.com/Ssenseii/harmoni/releases)
+2. Replace the old executable (or drag the new `.app` to Applications on macOS)
 3. Your `config.json` and data files are preserved
 
 ---

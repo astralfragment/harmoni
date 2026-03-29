@@ -33,6 +33,8 @@ DEFAULT_CONFIG = {
     "max_backups": 10,
     "profile": "light",
     "exportify_watch_folder": "data/exportify",
+    "ffmpeg_path": "",
+    "ytdlp_path": "",
 
     # Sync behavior
     "sync_write_tracks_json": True,
@@ -133,6 +135,8 @@ CONFIG_SCHEMA = {
     "max_backups": {"type": int, "required": False, "min": 0, "max": 100},
     "profile": {"type": str, "required": False, "choices": ["light", "advanced", "minimal"]},
     "exportify_watch_folder": {"type": str, "required": False},
+    "ffmpeg_path": {"type": str, "required": False},
+    "ytdlp_path": {"type": str, "required": False},
 
     "sync_write_tracks_json": {"type": bool, "required": False},
     "auto_sync_enabled": {"type": bool, "required": False},

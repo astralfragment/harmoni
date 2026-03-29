@@ -2,8 +2,9 @@
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QLineEdit, QGroupBox, QFormLayout,
-    QMessageBox, QSizePolicy, QTextEdit
+    QPushButton, QLineEdit, QGroupBox,
+    QMessageBox, QTextEdit, QScrollArea, QFrame,
+    QSpacerItem, QSizePolicy
 )
 from PySide6.QtCore import Qt
 
@@ -21,7 +22,15 @@ class YouTubeView(QWidget):
 
     def _setup_ui(self):
         """Set up the YouTube UI."""
-        layout = QVBoxLayout(self)
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.NoFrame)
+
+        scroll_widget = QWidget()
+        layout = QVBoxLayout(scroll_widget)
         layout.setContentsMargins(40, 30, 40, 30)
         layout.setSpacing(20)
 
@@ -34,36 +43,37 @@ class YouTubeView(QWidget):
         subtitle.setObjectName("subtitle")
         layout.addWidget(subtitle)
 
-        layout.addSpacing(20)
-
         # Single URL/Search Group
         single_group = QGroupBox("Download Single Track")
-        single_layout = QFormLayout(single_group)
-        single_layout.setSpacing(15)
+        single_layout = QVBoxLayout(single_group)
+        single_layout.setSpacing(12)
 
-        # URL or search input
+        url_label = QLabel("URL or search query")
+        url_label.setObjectName("muted")
+        single_layout.addWidget(url_label)
+
         self.url_input = QLineEdit()
         self.url_input.setPlaceholderText("Enter YouTube URL or search query (e.g., 'Artist - Song Name')")
         self.url_input.returnPressed.connect(self._add_single_to_queue)
-        single_layout.addRow("URL/Search:", self.url_input)
+        single_layout.addWidget(self.url_input)
 
-        # Download button
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
+        single_btn_layout = QHBoxLayout()
+        single_btn_layout.addStretch()
         add_btn = QPushButton("Add to Queue")
         add_btn.clicked.connect(self._add_single_to_queue)
-        btn_layout.addWidget(add_btn)
-        single_layout.addRow("", btn_layout)
+        single_btn_layout.addWidget(add_btn)
+        single_layout.addLayout(single_btn_layout)
 
-        layout.addWidget(single_group, 0)
+        layout.addWidget(single_group)
 
         # Batch input group
         batch_group = QGroupBox("Batch Download")
         batch_layout = QVBoxLayout(batch_group)
-        batch_layout.setSpacing(15)
+        batch_layout.setSpacing(12)
 
         help_label = QLabel("Enter multiple search queries, one per line (format: Artist - Track Name)")
-        help_label.setObjectName("subtitle")
+        help_label.setObjectName("muted")
+        help_label.setWordWrap(True)
         batch_layout.addWidget(help_label)
 
         self.batch_input = QTextEdit()
@@ -74,6 +84,7 @@ class YouTubeView(QWidget):
             "Ed Sheeran - Shape of You"
         )
         self.batch_input.setMinimumHeight(150)
+        self.batch_input.setMaximumHeight(250)
         batch_layout.addWidget(self.batch_input)
 
         batch_btn_layout = QHBoxLayout()
@@ -90,11 +101,12 @@ class YouTubeView(QWidget):
 
         batch_layout.addLayout(batch_btn_layout)
 
-        layout.addWidget(batch_group, 1)
+        layout.addWidget(batch_group)
 
         # Tips section
         tips_group = QGroupBox("Tips")
         tips_layout = QVBoxLayout(tips_group)
+        tips_layout.setSpacing(8)
 
         tips_text = QLabel(
             "- For best results, use the format: Artist - Track Name\n"
@@ -103,9 +115,15 @@ class YouTubeView(QWidget):
             "- Check the Downloads tab to monitor progress"
         )
         tips_text.setWordWrap(True)
+        tips_text.setObjectName("subtitle")
         tips_layout.addWidget(tips_text)
 
-        layout.addWidget(tips_group, 0)
+        layout.addWidget(tips_group)
+
+        layout.addSpacerItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
+
+        scroll.setWidget(scroll_widget)
+        main_layout.addWidget(scroll)
 
     def _parse_query(self, query: str) -> tuple:
         """
@@ -120,7 +138,6 @@ class YouTubeView(QWidget):
 
         # Check if it's a URL
         if query.startswith(("http://", "https://", "www.")):
-            # Use URL as both artist and track for now
             return "YouTube", query
 
         # Try to split by common separators

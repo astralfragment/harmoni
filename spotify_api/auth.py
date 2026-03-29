@@ -99,7 +99,7 @@ def spotify_app_setup_instructions(*, redirect_uri: str = "http://127.0.0.1:8888
         "1) Go to https://developer.spotify.com/dashboard\n"
         "2) Create an app (or select an existing app)\n"
         f"3) Add this Redirect URI in the app settings: {redirect_uri}\n"
-        "4) Copy the Client ID into spotify-yt-dlp-downloader/config.json as spotify_client_id\n"
+        "4) Copy the Client ID into harmoni/config.json as spotify_client_id\n"
         "5) Keep spotify_scopes as-is unless you know you need different permissions\n\n"
         "Notes:\n"
         "- This project uses Authorization Code + PKCE (no client secret required).\n"
