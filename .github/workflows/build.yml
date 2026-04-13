@@ -1,0 +1,264 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  # ─────────────────────────────────────────
+  # Windows
+  # ─────────────────────────────────────────
+  build-windows:
+    name: Build – Windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download FFmpeg (Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path bin | Out-Null
+          $url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+          Invoke-WebRequest $url -OutFile ffmpeg.zip
+          Expand-Archive ffmpeg.zip -DestinationPath ffmpeg_tmp
+          $exe = Get-ChildItem -Recurse ffmpeg_tmp -Filter ffmpeg.exe | Select-Object -First 1
+          Copy-Item $exe.FullName bin\ffmpeg.exe
+          $probe = Get-ChildItem -Recurse ffmpeg_tmp -Filter ffprobe.exe | Select-Object -First 1
+          Copy-Item $probe.FullName bin\ffprobe.exe
+          Remove-Item ffmpeg.zip, ffmpeg_tmp -Recurse -Force
+
+      - name: Download yt-dlp (Windows)
+        shell: pwsh
+        run: |
+          Invoke-WebRequest "https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe" -OutFile bin\yt-dlp.exe
+
+      - name: Build with PyInstaller (Windows)
+        shell: pwsh
+        run: |
+          pyinstaller `
+            --name "Harmoni" `
+            --windowed `
+            --onefile `
+            --icon "gui\resources\icons\app\app_icon.ico" `
+            --add-data "gui/resources/icons;gui/resources/icons" `
+            --add-binary "bin/ffmpeg.exe;bin" `
+            --add-binary "bin/ffprobe.exe;bin" `
+            --add-binary "bin/yt-dlp.exe;bin" `
+            --add-data "config.json.example;." `
+            --add-data "data;data" `
+            gui_main.py
+
+      - name: Package as ZIP (Windows)
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path release_win | Out-Null
+          Copy-Item dist\Harmoni.exe release_win\
+          Copy-Item config.json.example release_win\
+          Compress-Archive -Path release_win\* -DestinationPath Harmoni-Windows.zip
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Harmoni-Windows
+          path: Harmoni-Windows.zip
+
+  # ─────────────────────────────────────────
+  # macOS
+  # ─────────────────────────────────────────
+  build-macos:
+    name: Build – macOS
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install FFmpeg (macOS)
+        run: |
+          brew install ffmpeg
+          mkdir -p bin
+          cp "$(which ffmpeg)"  bin/ffmpeg
+          cp "$(which ffprobe)" bin/ffprobe
+
+      - name: Download yt-dlp (macOS)
+        run: |
+          curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos -o bin/yt-dlp
+          chmod +x bin/yt-dlp
+
+      - name: Convert icon to .icns
+        run: |
+          mkdir -p icon.iconset
+          sips -z 16   16   gui/resources/icons/app/app_icon.png --out icon.iconset/icon_16x16.png
+          sips -z 32   32   gui/resources/icons/app/app_icon.png --out icon.iconset/icon_16x16@2x.png
+          sips -z 32   32   gui/resources/icons/app/app_icon.png --out icon.iconset/icon_32x32.png
+          sips -z 64   64   gui/resources/icons/app/app_icon.png --out icon.iconset/icon_32x32@2x.png
+          sips -z 128  128  gui/resources/icons/app/app_icon.png --out icon.iconset/icon_128x128.png
+          sips -z 256  256  gui/resources/icons/app/app_icon.png --out icon.iconset/icon_128x128@2x.png
+          sips -z 256  256  gui/resources/icons/app/app_icon.png --out icon.iconset/icon_256x256.png
+          sips -z 512  512  gui/resources/icons/app/app_icon.png --out icon.iconset/icon_256x256@2x.png
+          sips -z 512  512  gui/resources/icons/app/app_icon.png --out icon.iconset/icon_512x512.png
+          sips -z 1024 1024 gui/resources/icons/app/app_icon.png --out icon.iconset/icon_512x512@2x.png
+          iconutil -c icns icon.iconset -o Harmoni.icns
+
+      - name: Build with PyInstaller (macOS)
+        run: |
+          pyinstaller \
+            --name "Harmoni" \
+            --windowed \
+            --onedir \
+            --icon Harmoni.icns \
+            --add-data "gui/resources/icons:gui/resources/icons" \
+            --add-binary "bin/ffmpeg:bin" \
+            --add-binary "bin/ffprobe:bin" \
+            --add-binary "bin/yt-dlp:bin" \
+            --add-data "config.json.example:." \
+            --add-data "data:data" \
+            --strip \
+            gui_main.py
+
+      - name: Detect architecture
+        id: arch
+        run: echo "arch=$(uname -m)" >> "$GITHUB_OUTPUT"
+
+      - name: Create DMG (macOS)
+        run: |
+          mkdir -p dmg_contents
+          if [ -d "dist/Harmoni.app" ]; then
+            cp -r dist/Harmoni.app dmg_contents/
+          else
+            cp -r dist/Harmoni dmg_contents/
+          fi
+          ln -s /Applications dmg_contents/Applications
+          hdiutil create \
+            -volname "Harmoni" \
+            -srcfolder dmg_contents \
+            -ov -format UDZO \
+            "Harmoni-macOS-${{ steps.arch.outputs.arch }}.dmg"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Harmoni-macOS-${{ steps.arch.outputs.arch }}
+          path: Harmoni-macOS-${{ steps.arch.outputs.arch }}.dmg
+
+  # ─────────────────────────────────────────
+  # Linux
+  # ─────────────────────────────────────────
+  build-linux:
+    name: Build – Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg libglib2.0-0 libgl1 libxcb-cursor0 \
+            libxcb-xinerama0 libxkbcommon-x11-0 libegl1 libdbus-1-3 \
+            libxrandr2 libxcomposite1 libxdamage1 libxfixes3 libxshmfence1
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Bundle FFmpeg
+        run: |
+          mkdir -p bin
+          cp "$(which ffmpeg)"  bin/ffmpeg
+          cp "$(which ffprobe)" bin/ffprobe
+
+      - name: Download yt-dlp (Linux)
+        run: |
+          curl -fL https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_linux -o bin/yt-dlp
+          chmod +x bin/yt-dlp
+
+      - name: Build with PyInstaller (Linux)
+        run: |
+          pyinstaller \
+            --name "Harmoni" \
+            --windowed \
+            --onefile \
+            --add-data "gui/resources/icons:gui/resources/icons" \
+            --add-binary "bin/ffmpeg:bin" \
+            --add-binary "bin/ffprobe:bin" \
+            --add-binary "bin/yt-dlp:bin" \
+            --add-data "config.json.example:." \
+            --add-data "data:data" \
+            --strip \
+            gui_main.py
+
+      - name: Package as tar.gz (Linux)
+        run: |
+          mkdir -p release_linux
+          cp dist/Harmoni release_linux/
+          cp config.json.example release_linux/
+          chmod +x release_linux/Harmoni
+          tar -czf Harmoni-Linux.tar.gz -C release_linux .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Harmoni-Linux
+          path: Harmoni-Linux.tar.gz
+
+  # ─────────────────────────────────────────
+  # GitHub Release  (only on version tags)
+  # ─────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-macos, build-linux]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List downloaded files
+        run: find artifacts -type f
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Harmoni ${{ github.ref_name }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/Harmoni-Windows/Harmoni-Windows.zip
+            artifacts/Harmoni-macOS-*/Harmoni-macOS-*.dmg
+            artifacts/Harmoni-Linux/Harmoni-Linux.tar.gz

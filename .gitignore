@@ -8,7 +8,18 @@ __pycache__/
 # Build artifacts
 dist/
 build/
+bin/
 *.spec.bak
+*.dmg
+*.zip
+Harmoni-*.tar.gz
+icon.iconset/
+*.icns
+dmg_contents/
+release_win/
+release_linux/
+ffmpeg_tmp/
+ffmpeg.zip
 
 # Application data
 music/
