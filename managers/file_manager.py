@@ -37,14 +37,21 @@ def detect_duplicates(directory):
 def organize_files(output_dir):
     import shutil
     try:
-        for file in os.listdir(output_dir):
-            if not file.endswith(".mp3"):
-                continue
+        # Collect all mp3s first so moves don't interfere with walking
+        mp3s = []
+        for root, _, files in os.walk(output_dir):
+            for file in files:
+                if file.endswith(".mp3"):
+                    mp3s.append(os.path.join(root, file))
+
+        for src in mp3s:
+            file = os.path.basename(src)
             artist = file.split(" - ")[0].strip()
             artist_dir = os.path.join(output_dir, artist)
-            os.makedirs(artist_dir, exist_ok=True)
-            src = os.path.join(output_dir, file)
             dst = os.path.join(artist_dir, file)
+            if src == dst:
+                continue
+            os.makedirs(artist_dir, exist_ok=True)
             if not os.path.exists(dst):
                 shutil.move(src, dst)
                 log_info(f"Moved {file} to {artist_dir}")
