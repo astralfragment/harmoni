@@ -5,7 +5,19 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 
-DEFAULT_TOKEN_CACHE_PATH = os.path.join("data", "spotify_tokens.json")
+def _get_default_cache_path():
+    """Resolve token cache path relative to the app directory, not the working directory."""
+    try:
+        import sys
+        if getattr(sys, 'frozen', False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    except Exception:
+        base = "."
+    return os.path.join(base, "data", "spotify_tokens.json")
+
+DEFAULT_TOKEN_CACHE_PATH = _get_default_cache_path()
 
 
 @dataclass(frozen=True)
