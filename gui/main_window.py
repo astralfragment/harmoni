@@ -349,6 +349,7 @@ class MainWindow(QMainWindow):
             self.youtube_view.config = self.config
             self.downloads_view.config = self.config
             self.welcome_view.config = self.config
+            self.settings_view.config = self.config
             self.status_label.setText("Settings saved successfully")
         except Exception as e:
             self.status_label.setText(f"Error reloading config: {e}")
