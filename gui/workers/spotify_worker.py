@@ -143,7 +143,7 @@ class SpotifyWorker(QThread):
             items = result.get("items", [])
 
             for item in items:
-                track_obj = item.get("track")
+                track_obj = item.get("item") or item.get("track")
                 if not track_obj:
                     continue
 
