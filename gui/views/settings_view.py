@@ -576,6 +576,7 @@ class SettingsView(QWidget):
     def _save_settings(self):
         """Save current settings to config."""
         try:
+            # Update config dict
             output_dir = self.output_dir_input.text().strip()
             if not output_dir:
                 output_dir = "music"

@@ -8,7 +8,7 @@ from PySide6.QtWidgets import (
     QSplitter, QProgressBar, QMessageBox,
     QCheckBox, QAbstractItemView, QMenu
 )
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import Qt, Signal, QTimer
 from PySide6.QtGui import QAction
 
 from gui.workers.download_queue import DownloadQueue
@@ -21,7 +21,7 @@ from spotify_api.token_manager import TokenManager
 class SpotifyView(QWidget):
     """View for Spotify playlist browsing and track selection."""
 
-    connection_changed = Signal(bool)
+    connection_changed = Signal(bool)  # Emits connection status
 
     def __init__(self, config: dict, queue: DownloadQueue, parent=None):
         super().__init__(parent)
@@ -29,6 +29,7 @@ class SpotifyView(QWidget):
         self.queue = queue
         self.worker = None
         self.current_tracks = []
+        self._tracks_cache = {}
         self._updating_checks = False
         self._setup_ui()
         self._check_connection()
@@ -45,6 +46,7 @@ class SpotifyView(QWidget):
         header_layout.addWidget(title)
         header_layout.addStretch()
 
+        # Connection status
         self.status_label = QLabel("Not connected")
         self.status_label.setObjectName("subtitle")
         header_layout.addWidget(self.status_label)
@@ -54,10 +56,12 @@ class SpotifyView(QWidget):
         header_layout.addWidget(self.connect_btn)
         layout.addLayout(header_layout)
 
+        # Progress bar for loading
         self.progress_bar = QProgressBar()
         self.progress_bar.hide()
         layout.addWidget(self.progress_bar)
 
+        # Main content splitter
         splitter = QSplitter(Qt.Horizontal)
 
         # Left panel - Playlists
@@ -69,6 +73,7 @@ class SpotifyView(QWidget):
         playlists_label.setObjectName("section")
         left_layout.addWidget(playlists_label)
 
+        # Refresh button
         btn_row = QHBoxLayout()
         self.refresh_btn = QPushButton("Refresh")
         self.refresh_btn.setObjectName("secondary")
@@ -85,11 +90,24 @@ class SpotifyView(QWidget):
         btn_row.addStretch()
         left_layout.addLayout(btn_row)
 
+        # Playlist list
         self.playlist_list = QListWidget()
-        self.playlist_list.itemClicked.connect(self._on_playlist_selected)
+        self.playlist_list.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.playlist_list.itemDoubleClicked.connect(self._on_playlist_selected)
         self.playlist_list.setContextMenuPolicy(Qt.CustomContextMenu)
         self.playlist_list.customContextMenuRequested.connect(self._show_playlist_context_menu)
         left_layout.addWidget(self.playlist_list)
+
+        bottom_row = QHBoxLayout()
+        self.load_selected_btn = QPushButton("Load")
+        self.load_selected_btn.setObjectName("secondary")
+        self.load_selected_btn.clicked.connect(self._load_selected_playlists)
+        bottom_row.addWidget(self.load_selected_btn)
+
+        self.download_selected_btn = QPushButton("Download")
+        self.download_selected_btn.clicked.connect(self._download_selected_playlists)
+        bottom_row.addWidget(self.download_selected_btn)
+        left_layout.addLayout(bottom_row)
 
         splitter.addWidget(left_panel)
 
@@ -98,17 +116,20 @@ class SpotifyView(QWidget):
         right_layout = QVBoxLayout(right_panel)
         right_layout.setContentsMargins(10, 0, 0, 0)
 
+        # Tracks header
         tracks_header = QHBoxLayout()
         self.tracks_label = QLabel("Tracks")
         self.tracks_label.setObjectName("section")
         tracks_header.addWidget(self.tracks_label)
         tracks_header.addStretch()
 
+        # Select all checkbox
         self.select_all_check = QCheckBox("Select All")
         self.select_all_check.stateChanged.connect(self._toggle_select_all)
         tracks_header.addWidget(self.select_all_check)
         right_layout.addLayout(tracks_header)
 
+        # Tracks table
         self.tracks_table = QTableWidget()
         self.tracks_table.setColumnCount(4)
         self.tracks_table.setHorizontalHeaderLabels(["", "Artist", "Track", "Album"])
@@ -127,6 +148,7 @@ class SpotifyView(QWidget):
         self.tracks_table.customContextMenuRequested.connect(self._show_context_menu)
         right_layout.addWidget(self.tracks_table)
 
+        # Add to queue button
         footer = QHBoxLayout()
         footer.addStretch()
         self.track_count_label = QLabel("0 tracks selected")
@@ -138,6 +160,8 @@ class SpotifyView(QWidget):
         right_layout.addLayout(footer)
 
         splitter.addWidget(right_panel)
+
+        # Set splitter proportions
         splitter.setSizes([300, 700])
         layout.addWidget(splitter, 1)
 
@@ -145,6 +169,7 @@ class SpotifyView(QWidget):
         auth = SpotifyPKCEAuth(self.config)
         token = auth.load_cached_token()
         if token and token.access_token:
+            # Check if expired
             if TokenManager.is_expired(token):
                 if token.refresh_token:
                     try:
@@ -167,6 +192,7 @@ class SpotifyView(QWidget):
             self.refresh_btn.setEnabled(True)
             self.liked_btn.setEnabled(True)
             self.connection_changed.emit(True)
+            # Auto-refresh playlists
             self._refresh_playlists()
         else:
             self.status_label.setText("Not connected")
@@ -196,9 +222,16 @@ class SpotifyView(QWidget):
         if reply == QMessageBox.Yes:
             self._show_oauth_dialog()
 
-    def _refresh_playlists(self):
+    def _stop_worker(self):
+        """Cancel any running worker before starting a new one."""
         if self.worker and self.worker.isRunning():
-            return
+            self.worker.cancel()
+            if not self.worker.wait(2000):
+                self.worker.terminate()
+
+    def _refresh_playlists(self):
+        self._stop_worker()
+        self._tracks_cache.clear()
         self.worker = SpotifyWorker(self.config)
         self.worker.playlists_loaded.connect(self._on_playlists_loaded)
         self.worker.error.connect(self._on_error)
@@ -220,6 +253,100 @@ class SpotifyView(QWidget):
             item.setData(Qt.UserRole, playlist)
             self.playlist_list.addItem(item)
 
+    def _load_selected_playlists(self):
+        """Queue all selected playlists for loading."""
+        selected = self.playlist_list.selectedItems()
+        if not selected:
+            QMessageBox.information(self, "No Selection", "Select playlists first (cmd+click for multiple).")
+            return
+        self._load_queue = []
+        for item in selected:
+            playlist = item.data(Qt.UserRole)
+            if playlist and playlist.get("id") and playlist["id"] not in self._tracks_cache:
+                self._load_queue.append((item, playlist))
+        if self._load_queue:
+            self._load_next_playlist()
+        else:
+            QMessageBox.information(self, "Already Loaded", "All selected playlists are already loaded.")
+
+    def _load_next_playlist(self):
+        if not self._load_queue:
+            return
+        if self.worker and self.worker.isRunning():
+            return
+        item, playlist = self._load_queue.pop(0)
+        self._on_playlist_selected(item)
+
+    def _download_selected_playlists(self):
+        """Queue all selected playlists for download. Uses cache if available, fetches if not."""
+        selected = self.playlist_list.selectedItems()
+        if not selected:
+            QMessageBox.information(self, "No Selection", "Select playlists first (cmd+click for multiple).")
+            return
+
+        queued_count = 0
+        self._download_queue_playlists = []
+        for item in selected:
+            playlist = item.data(Qt.UserRole)
+            if not playlist or not playlist.get("id"):
+                continue
+            pid = playlist["id"]
+            if pid in self._tracks_cache:
+                self.queue.add_tracks(self._tracks_cache[pid], playlist=playlist.get("name", ""))
+                queued_count += len(self._tracks_cache[pid])
+            else:
+                self._download_queue_playlists.append(playlist)
+
+        if self._download_queue_playlists:
+            self._fetch_and_queue_next()
+
+        if queued_count > 0:
+            msg = f"Added {queued_count} cached tracks to download queue."
+            if self._download_queue_playlists:
+                msg += f"\nFetching {len(self._download_queue_playlists)} more playlist(s)..."
+            QMessageBox.information(self, "Added to Queue", msg)
+
+    def _fetch_and_queue_next(self):
+        if not self._download_queue_playlists:
+            QMessageBox.information(self, "Done", "All selected playlists have been queued for download.")
+            return
+        self._stop_worker()
+        playlist = self._download_queue_playlists.pop(0)
+        self.worker = SpotifyWorker(self.config)
+        self.worker.tracks_loaded.connect(self._on_download_tracks_loaded)
+        self.worker.error.connect(self._on_error)
+        self.worker.progress.connect(self._on_progress)
+        self.worker.fetch_playlist_tracks(playlist["id"], playlist["name"])
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.show()
+
+    def _on_download_tracks_loaded(self, playlist_id: str, tracks: list):
+        self.progress_bar.hide()
+        self._tracks_cache[playlist_id] = tracks
+        self._update_playlist_track_count(playlist_id, len(tracks))
+        name = playlist_id
+        for i in range(self.playlist_list.count()):
+            item = self.playlist_list.item(i)
+            p = item.data(Qt.UserRole)
+            if p and p.get("id") == playlist_id:
+                name = p.get("name", playlist_id)
+                break
+        self.queue.add_tracks(tracks, playlist=name)
+        QTimer.singleShot(500, self._fetch_and_queue_next)
+
+    def _download_single_playlist(self, playlist: dict):
+        """Download a single playlist — use cache if available, fetch otherwise."""
+        pid = playlist.get("id")
+        name = playlist.get("name", "Unknown")
+        if pid in self._tracks_cache:
+            tracks = self._tracks_cache[pid]
+            self.queue.add_tracks(tracks, playlist=name)
+            QMessageBox.information(self, "Added to Queue",
+                f"Added {len(tracks)} tracks from \"{name}\" to download queue.")
+        else:
+            self._download_queue_playlists = [playlist]
+            self._fetch_and_queue_next()
+
     def _update_playlist_track_count(self, playlist_id: str, count: int):
         for i in range(self.playlist_list.count()):
             item = self.playlist_list.item(i)
@@ -234,21 +361,37 @@ class SpotifyView(QWidget):
         playlist = item.data(Qt.UserRole)
         if not playlist:
             return
-        if self.worker and self.worker.isRunning():
+        pid = playlist["id"]
+        self.tracks_label.setText(f"Tracks - {playlist['name']}")
+
+        if pid in self._tracks_cache:
+            self._populate_tracks(self._tracks_cache[pid])
             return
+
+        self._stop_worker()
         self.worker = SpotifyWorker(self.config)
+        self.worker.tracks_batch.connect(self._on_tracks_batch)
         self.worker.tracks_loaded.connect(self._on_tracks_loaded)
         self.worker.error.connect(self._on_error)
         self.worker.progress.connect(self._on_progress)
-        self.worker.fetch_playlist_tracks(playlist["id"], playlist["name"])
+        self.worker.fetch_playlist_tracks(pid, playlist["name"])
         self.progress_bar.setRange(0, 0)
         self.progress_bar.show()
-        self.tracks_label.setText(f"Tracks - {playlist['name']}")
+        self.current_tracks = []
+        self.tracks_table.blockSignals(True)
+        self.tracks_table.setRowCount(0)
+        self.tracks_table.blockSignals(False)
 
     def _fetch_liked_songs(self):
-        if self.worker and self.worker.isRunning():
+        self.tracks_label.setText("Tracks - Liked Songs")
+
+        if "__liked_songs__" in self._tracks_cache:
+            self._populate_tracks(self._tracks_cache["__liked_songs__"])
             return
+
+        self._stop_worker()
         self.worker = SpotifyWorker(self.config)
+        self.worker.tracks_batch.connect(self._on_tracks_batch)
         self.worker.liked_songs_loaded.connect(self._on_liked_songs_loaded)
         self.worker.error.connect(self._on_error)
         self.worker.progress.connect(self._on_progress)
@@ -256,16 +399,48 @@ class SpotifyView(QWidget):
         self.progress_bar.setRange(0, 0)
         self.progress_bar.show()
         self.liked_btn.setEnabled(False)
+        self.current_tracks = []
+        self.tracks_table.blockSignals(True)
+        self.tracks_table.setRowCount(0)
+        self.tracks_table.blockSignals(False)
+
+    def _on_tracks_batch(self, playlist_id: str, batch: list):
+        """Append a batch of tracks to the table as they stream in."""
+        self.tracks_table.blockSignals(True)
+        for track in batch:
+            self.current_tracks.append(track)
+            row = self.tracks_table.rowCount()
+            self.tracks_table.insertRow(row)
+            check_item = QTableWidgetItem()
+            check_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
+            check_item.setCheckState(Qt.CheckState.Unchecked)
+            self.tracks_table.setItem(row, 0, check_item)
+            self.tracks_table.setItem(row, 1, QTableWidgetItem(track.get("artist", "")))
+            self.tracks_table.setItem(row, 2, QTableWidgetItem(track.get("track", "")))
+            self.tracks_table.setItem(row, 3, QTableWidgetItem(track.get("album", "")))
+        self.tracks_table.blockSignals(False)
+        try:
+            self.tracks_table.selectionModel().selectionChanged.disconnect(self._on_selection_changed)
+        except RuntimeError:
+            pass
+        self.tracks_table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self._update_selection_count()
+        self.add_btn.setEnabled(True)
 
     def _on_liked_songs_loaded(self, tracks: list):
         self.progress_bar.hide()
         self.liked_btn.setEnabled(True)
-        self.tracks_label.setText("Tracks - Liked Songs")
-        self._populate_tracks(tracks)
+        self._tracks_cache["__liked_songs__"] = tracks
+        self.tracks_table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self._update_selection_count()
 
     def _on_tracks_loaded(self, playlist_id: str, tracks: list):
         self.progress_bar.hide()
-        self._populate_tracks(tracks)
+        self._tracks_cache[playlist_id] = tracks
+        self.tracks_table.selectionModel().selectionChanged.connect(self._on_selection_changed)
+        self._update_selection_count()
+        if hasattr(self, '_load_queue') and self._load_queue:
+            QTimer.singleShot(500, self._load_next_playlist)
         self._update_playlist_track_count(playlist_id, len(tracks))
 
     def _populate_tracks(self, tracks: list):
@@ -279,10 +454,13 @@ class SpotifyView(QWidget):
         for track in tracks:
             row = self.tracks_table.rowCount()
             self.tracks_table.insertRow(row)
+            # Checkbox
             check_item = QTableWidgetItem()
             check_item.setFlags(Qt.ItemIsUserCheckable | Qt.ItemIsEnabled)
             check_item.setCheckState(Qt.CheckState.Unchecked)
             self.tracks_table.setItem(row, 0, check_item)
+
+            # Track data
             self.tracks_table.setItem(row, 1, QTableWidgetItem(track.get("artist", "")))
             self.tracks_table.setItem(row, 2, QTableWidgetItem(track.get("track", "")))
             self.tracks_table.setItem(row, 3, QTableWidgetItem(track.get("album", "")))
@@ -386,6 +564,15 @@ class SpotifyView(QWidget):
         if self.playlist_list.count() == 0:
             return
         menu = QMenu(self)
+        selected = self.playlist_list.selectedItems()
+        if len(selected) > 1:
+            load_sel = QAction(f"Load {len(selected)} Playlists", self)
+            load_sel.triggered.connect(self._load_selected_playlists)
+            menu.addAction(load_sel)
+            dl_sel = QAction(f"Download {len(selected)} Playlists", self)
+            dl_sel.triggered.connect(self._download_selected_playlists)
+            menu.addAction(dl_sel)
+            menu.addSeparator()
         item = self.playlist_list.itemAt(position)
         if item:
             playlist = item.data(Qt.UserRole)
@@ -393,6 +580,14 @@ class SpotifyView(QWidget):
                 load = QAction(f"Load \"{playlist.get('name', '')}\"", self)
                 load.triggered.connect(lambda checked, i=item: self._on_playlist_selected(i))
                 menu.addAction(load)
+
+                dl = QAction(f"Download \"{playlist.get('name', '')}\"", self)
+                dl.triggered.connect(lambda checked, p=playlist: self._download_single_playlist(p))
+                menu.addAction(dl)
+        menu.addSeparator()
+        sa = QAction("Select All Playlists", self)
+        sa.triggered.connect(self.playlist_list.selectAll)
+        menu.addAction(sa)
         menu.exec(self.playlist_list.viewport().mapToGlobal(position))
 
     def _set_all_checked(self, checked: bool):
@@ -432,7 +627,10 @@ class SpotifyView(QWidget):
         if not tracks:
             QMessageBox.information(self, "No Selection", "Please select tracks to download.")
             return
+        # Get playlist name for the queue
         playlist_name = self.tracks_label.text().replace("Tracks - ", "")
+
+        # Add to queue
         self.queue.add_tracks(tracks, playlist=playlist_name)
         QMessageBox.information(
             self, "Added to Queue",

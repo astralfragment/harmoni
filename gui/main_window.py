@@ -284,6 +284,18 @@ class MainWindow(QMainWindow):
         spacer.setFixedWidth(20)
         status_bar.addWidget(spacer)
 
+        import_btn = QPushButton("Import CSV")
+        import_btn.setObjectName("ghost")
+        import_btn.setStyleSheet("font-size: 11px; padding: 2px 8px; min-width: 0;")
+        import_btn.clicked.connect(self._quick_import_csv)
+        status_bar.addPermanentWidget(import_btn)
+
+        exportify_btn = QPushButton("Exportify")
+        exportify_btn.setObjectName("ghost")
+        exportify_btn.setStyleSheet("font-size: 11px; padding: 2px 8px; min-width: 0;")
+        exportify_btn.clicked.connect(self._open_exportify)
+        status_bar.addPermanentWidget(exportify_btn)
+
         # Download count
         self.download_count_label = QLabel("Queue: 0")
         status_bar.addPermanentWidget(self.download_count_label)
@@ -353,6 +365,16 @@ class MainWindow(QMainWindow):
             self.status_label.setText("Settings saved successfully")
         except Exception as e:
             self.status_label.setText(f"Error reloading config: {e}")
+
+    def _quick_import_csv(self):
+        from PySide6.QtWidgets import QFileDialog
+        files, _ = QFileDialog.getOpenFileNames(self, "Import Exportify CSV", "", "CSV Files (*.csv)")
+        if files:
+            self.welcome_view._handle_dropped_files(files)
+
+    def _open_exportify(self):
+        import webbrowser
+        webbrowser.open("https://exportify.net")
 
     def set_status(self, message: str):
         """Set status bar message."""
