@@ -105,6 +105,7 @@ class StepCard(QFrame):
     def __init__(self, number: int, title: str, description: str, parent=None):
         super().__init__(parent)
         self.setObjectName("card")
+        self.setStyleSheet("StepCard { background-color: #282840; }")
         self._setup_ui(number, title, description)
 
     def _setup_ui(self, number: int, title: str, description: str):
@@ -253,7 +254,19 @@ class WelcomeView(QWidget):
         """)
         easiest_header.addWidget(easiest_badge)
 
+        self.toggle_help_btn = QPushButton("Hide Guide")
+        self.toggle_help_btn.setObjectName("ghost")
+        self.toggle_help_btn.clicked.connect(self._toggle_help)
+        easiest_header.addWidget(self.toggle_help_btn)
+
         easiest_layout.addLayout(easiest_header)
+
+        # Collapsible help content
+        self.help_container = QWidget()
+        self.help_container.setStyleSheet("background: transparent;")
+        help_layout = QVBoxLayout(self.help_container)
+        help_layout.setContentsMargins(0, 0, 0, 0)
+        help_layout.setSpacing(12)
 
         # Explanation
         explanation = QLabel(
@@ -262,7 +275,7 @@ class WelcomeView(QWidget):
         )
         explanation.setStyleSheet("font-size: 14px; line-height: 1.5;")
         explanation.setWordWrap(True)
-        easiest_layout.addWidget(explanation)
+        help_layout.addWidget(explanation)
 
         # Steps
         steps_layout = QVBoxLayout()
@@ -296,14 +309,31 @@ class WelcomeView(QWidget):
         )
         steps_layout.addWidget(step4)
 
-        easiest_layout.addLayout(steps_layout)
+        help_layout.addLayout(steps_layout)
+        easiest_layout.addWidget(self.help_container)
 
         # Link to exportify
         link_layout = QHBoxLayout()
         link_layout.setSpacing(12)
 
-        exportify_btn = QPushButton("Open exportify.net")
-        exportify_btn.setObjectName("secondary")
+        exportify_btn = QPushButton("\u2197  Open exportify.net")
+        exportify_btn.setStyleSheet("""
+            QPushButton {
+                background-color: rgba(255, 255, 255, 0.12);
+                color: #e3e4e0;
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                padding: 10px 20px;
+                border-radius: 6px;
+                font-weight: 600;
+                font-size: 13px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.2);
+                border-color: rgba(255, 255, 255, 0.35);
+            }
+            QPushButton:pressed { background-color: rgba(255, 255, 255, 0.08); }
+        """)
+        exportify_btn.setCursor(Qt.PointingHandCursor)
         exportify_btn.clicked.connect(self._open_exportify)
         link_layout.addWidget(exportify_btn)
 
@@ -436,6 +466,11 @@ class WelcomeView(QWidget):
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.addWidget(scroll)
+
+    def _toggle_help(self):
+        visible = self.help_container.isVisible()
+        self.help_container.setVisible(not visible)
+        self.toggle_help_btn.setText("Show Guide" if visible else "Hide Guide")
 
     def _open_exportify(self):
         """Open Exportify website in browser."""

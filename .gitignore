@@ -42,3 +42,4 @@ Thumbs.db
 
 # Internal documentation (not for public release)
 docs/internal/
+data/spotify_cache.json

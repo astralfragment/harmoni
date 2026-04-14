@@ -34,7 +34,7 @@ QMainWindow {{
 QWidget {{
     background-color: {COLORS["background"]};
     color: {COLORS["text"]};
-    font-family: 'Segoe UI', 'SF Pro Display', -apple-system, Arial, sans-serif;
+    font-family: 'Helvetica Neue', 'Segoe UI', Arial;
     font-size: 14px;
 }}
 
@@ -285,6 +285,8 @@ QTableWidget {{
     border-radius: 10px;
     gridline-color: {COLORS["border"]};
     outline: none;
+    selection-background-color: {COLORS["accent_muted"]};
+    selection-color: {COLORS["text"]};
 }}
 
 QTableWidget::item {{
@@ -292,13 +294,13 @@ QTableWidget::item {{
     border: none;
 }}
 
+QTableWidget::item:hover:!selected {{
+    background-color: {COLORS["background_light"]};
+}}
+
 QTableWidget::item:selected {{
     background-color: {COLORS["accent_muted"]};
     color: {COLORS["text"]};
-}}
-
-QTableWidget::item:hover {{
-    background-color: {COLORS["background_light"]};
 }}
 
 QHeaderView::section {{

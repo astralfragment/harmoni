@@ -237,7 +237,7 @@ class SpotifyClient:
     def playlist_items(self, playlist_id: str, *, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         return self.request_json(
             "GET",
-            f"/playlists/{playlist_id}/tracks",
+            f"/playlists/{playlist_id}/items",
             params={"limit": limit, "offset": offset, "additional_types": "track"},
         )
 
@@ -254,7 +254,7 @@ class SpotifyClient:
     def get_playlist_tracks(self, playlist_id: str, *, limit: int = 100) -> List[Dict[str, Any]]:
         # Endpoint shape: {items: [{added_at, track: {...}}], total, ...}
         return self._paginate(
-            f"/playlists/{playlist_id}/tracks",
+            f"/playlists/{playlist_id}/items",
             params={"limit": min(100, int(limit)), "additional_types": "track"},
             page_key="items",
         )

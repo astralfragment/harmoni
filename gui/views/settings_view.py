@@ -564,6 +564,15 @@ class SettingsView(QWidget):
         except Exception:
             pass  # Silently fail for individual updates
 
+    def _safe_int(self, text: str, default: int) -> int:
+        text = text.strip()
+        if not text:
+            return default
+        try:
+            return int(text)
+        except ValueError:
+            return default
+
     def _save_settings(self):
         """Save current settings to config."""
         try:
@@ -574,14 +583,14 @@ class SettingsView(QWidget):
 
             self.config["output_dir"] = output_dir
             self.config["audio_format"] = self.format_combo.currentText()
-            self.config["spotify_client_id"] = self.client_id_input.text()
-            self.config["sleep_between"] = int(self.sleep_input.text() or 5)
-            self.config["retry_attempts"] = int(self.retry_input.text() or 3)
+            self.config["spotify_client_id"] = self.client_id_input.text().strip()
+            self.config["sleep_between"] = self._safe_int(self.sleep_input.text(), 5)
+            self.config["retry_attempts"] = self._safe_int(self.retry_input.text(), 3)
             self.config["enable_metadata_embedding"] = self.metadata_check.isChecked()
             self.config["metadata_template"] = self.template_combo.currentText()
             self.config["enable_musicbrainz_lookup"] = self.musicbrainz_check.isChecked()
             self.config["auto_backup"] = self.backup_check.isChecked()
-            self.config["max_backups"] = int(self.max_backups_input.text() or 10)
+            self.config["max_backups"] = self._safe_int(self.max_backups_input.text(), 10)
             self.config["ffmpeg_path"] = self.ffmpeg_path_input.text().strip()
             self.config["ytdlp_path"] = self.ytdlp_path_input.text().strip()
 

@@ -86,7 +86,7 @@ class SpotifyDataLoader:
             for item in items:
                 if not isinstance(item, dict):
                     continue
-                track_obj = item.get("track")
+                track_obj = item.get("item") or item.get("track")
                 normalized = self._normalize_track(track_obj)
                 if normalized:
                     # preserve playlist-added timestamp if available
@@ -138,7 +138,7 @@ class SpotifyDataLoader:
             for item in items:
                 if not isinstance(item, dict):
                     continue
-                track_obj = item.get("track")
+                track_obj = item.get("item") or item.get("track")
                 normalized = self._normalize_track(track_obj)
                 if normalized:
                     if item.get("added_at"):

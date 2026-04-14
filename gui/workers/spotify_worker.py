@@ -22,6 +22,7 @@ class SpotifyWorker(QThread):
 
     playlists_loaded = Signal(list)  # List of playlist dicts
     tracks_loaded = Signal(str, list)  # playlist_id, list of track dicts
+    tracks_batch = Signal(str, list)  # playlist_id, batch of tracks (streaming)
     liked_songs_loaded = Signal(list)  # List of track dicts
     error = Signal(str)  # Error message
     progress = Signal(str, int, int)  # message, current, total
@@ -142,8 +143,9 @@ class SpotifyWorker(QThread):
             result = client.playlist_items(playlist_id, limit=limit, offset=offset)
             items = result.get("items", [])
 
+            batch = []
             for item in items:
-                track_obj = item.get("track")
+                track_obj = item.get("item") or item.get("track")
                 if not track_obj:
                     continue
 
@@ -160,6 +162,10 @@ class SpotifyWorker(QThread):
                     "spotify_id": track_obj.get("id"),
                 }
                 tracks.append(track)
+                batch.append(track)
+
+            if batch and not self._cancelled:
+                self.tracks_batch.emit(playlist_id, batch)
 
             total = result.get("total", 0)
             self.progress.emit(
@@ -188,6 +194,7 @@ class SpotifyWorker(QThread):
             result = client.current_user_saved_tracks(limit=limit, offset=offset)
             items = result.get("items", [])
 
+            batch = []
             for item in items:
                 track_obj = item.get("track")
                 if not track_obj:
@@ -206,6 +213,10 @@ class SpotifyWorker(QThread):
                     "spotify_id": track_obj.get("id"),
                 }
                 tracks.append(track)
+                batch.append(track)
+
+            if batch and not self._cancelled:
+                self.tracks_batch.emit("__liked_songs__", batch)
 
             total = result.get("total", 0)
             self.progress.emit(f"Loaded {len(tracks)} of {total} liked songs", len(tracks), total)
